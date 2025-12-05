@@ -1,0 +1,27 @@
+.table{
+    border:1px solid rgba(0, 0, 255, 0.083);
+    border-collapse: collapse;
+    >thead{
+        tr{
+            color:white;
+            background-color: var( --primary-color-800);
+            font-weight: 500;
+            td{
+                border-right: 2px solid #fff;
+                text-align: center;
+            }
+        }
+    }
+    >tbody{
+        tr{
+            border:1px solid rgba(0, 0, 255, 0.083);
+            &:nth-child(n+1){
+                background-color: var( --primary-color-200);
+            }
+            td{
+                padding:8px 16px;
+                border:1px solid rgba(0, 0, 255, 0.083);
+            }
+        }
+    }
+}

@@ -1,0 +1,57 @@
+.addressTag{
+    padding:8px 16px;
+    display: flex;
+    input[type="radio"]{
+        margin:0 16px;
+    }
+    .address{
+        display: flex;
+        flex-grow: 1;
+        div{
+            flex: 1;
+        }
+    }
+    .deleteBtn{
+        background-color: transparent;
+        border: none;
+    }
+    
+}
+.addAddressButton{
+    width: 100%;
+    padding-top: 0px;
+    padding-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: 3px dashed var(--primary-color-400);
+    color:var(--primary-color-400);
+    border-radius: 0.8rem;
+    div{
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        flex-direction: column;
+        .icon{
+            font-size: 2rem;
+            font-weight: bold;
+        }
+    }
+}
+.editEnable{
+    padding:4px 16px;
+    border: none;
+    color: rgb(74, 74, 74);
+    font-weight:500;
+    border-radius: 2rem;
+    &:hover{
+        background-color:rgba(99, 99, 99, 0.303) ;
+    }
+}
+.disableEdit{
+    border:none;
+    color:rgb(85, 150, 255);
+    background: none;
+    font-weight: 500;
+}

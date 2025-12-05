@@ -1,0 +1,21 @@
+.category {
+    overflow-x: scroll;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+
+    &::-webkit-scrollbar-thumb {
+        height: 6px;
+        border-radius: 10px;
+        border-radius: 3px;
+        background-color: var(--primary-color-200);
+    }
+}
+
+.productCard {
+    border: 1px solid var(--primary-color-200);
+}

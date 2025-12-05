@@ -1,0 +1,9 @@
+.deleteBtn {
+    font-size: 1.3rem;
+    opacity: 0.6;
+    cursor: pointer;
+
+    &:hover {
+        opacity: 1;
+    }
+}

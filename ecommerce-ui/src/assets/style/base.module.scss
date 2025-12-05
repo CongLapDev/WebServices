@@ -1,0 +1,11 @@
+.listItem{
+    padding-top: 3px;
+    padding-bottom: 3px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    .icon{
+        padding-top: 3px;
+        padding-right: 8px;
+    }
+}

@@ -1,0 +1,11 @@
+.option{
+    width: fit-content;
+}
+.status{
+    font-weight:500;
+    font-size: 13px;
+    color:red;
+    span{
+        color:var(--primary-color-600);
+    }
+}

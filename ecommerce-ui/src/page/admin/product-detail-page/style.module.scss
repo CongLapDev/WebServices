@@ -1,0 +1,21 @@
+.productItemTable{
+    width:100% ;
+    padding:8px 16px;
+    text-align: center;
+    vertical-align: middle;
+    thead>tr{
+        background-color: antiquewhite !important;
+    }
+    tbody{
+        background-color: rgba(134, 4, 255, 0.064);
+        >tr{
+            >td:first-child{
+                width: 200px;
+            }
+            >td:last-child{
+                width: 50px;
+            }
+        }
+    }
+    
+}

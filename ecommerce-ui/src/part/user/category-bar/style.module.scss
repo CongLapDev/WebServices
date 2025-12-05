@@ -1,0 +1,31 @@
+.container {
+    background-color: white;
+
+    .category {
+        padding: 8px 16px;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0px auto;
+        cursor: pointer;
+        flex-wrap: nowrap;
+        overflow-x: scroll;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        .categoryItem {
+            justify-content: center;
+            padding: 8px 16px;
+            color: var(--sub-color-400);
+            font-weight: 500 !important;
+            font-size: 0.95rem;
+
+            &:hover {
+                background-color: rgba(255, 125, 147, 0.071);
+                border-radius: var(--base-radius);
+                color: var(--sub-color-800);
+            }
+        }
+    }
+}

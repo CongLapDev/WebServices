@@ -1,0 +1,9 @@
+.option{
+    width: fit-content;
+}
+.inputGroup{
+    display: flex;
+    >div:not(:first-child){
+        margin-left:0.4rem ;
+    }
+}

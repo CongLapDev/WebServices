@@ -1,0 +1,19 @@
+spring:
+  profiles:
+    active: local
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3307/WebServices?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    username: WebServices_user
+    password: 123
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+server:
+  port: 8085
+nhs:
+  token:
+    accessTokenms: 3600000
+    refreshTokenms: 7200000
+

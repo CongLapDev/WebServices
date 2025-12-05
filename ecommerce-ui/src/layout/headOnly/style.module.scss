@@ -1,0 +1,93 @@
+@import '../../global.module.scss';
+
+.header {
+    position: sticky;
+    top: 0px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    z-index: 1;
+
+    .categoryToggle {
+        display: block;
+
+        @include tablet {
+            display: none;
+        }
+
+        @include desktop {
+            display: none;
+        }
+
+
+        i {
+            border-radius: $border-radius;
+            cursor: pointer;
+
+            &:hover {
+                background-color: var(--primary-color-200);
+            }
+
+        }
+    }
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0px auto;
+    padding: 16px;
+
+    @include mobile {
+        padding: 4px;
+    }
+
+    :global .ant-card-body {
+        @include mobile {
+            padding: 8px !important;
+        }
+    }
+}
+
+.category {
+    transform: translateY(-100%);
+    display: none;
+    transition: 1s linear;
+
+    @include mobile {
+        display: none;
+    }
+
+    @include tablet {
+        display: none;
+    }
+
+    &.display {
+        display: flex !important;
+        transform: translateY(0%) !important;
+    }
+}
+
+.footer {
+    background-color: var(--primary-color-600);
+
+    color: white;
+
+    .container {
+        max-width: 1200px;
+        margin: 0px auto;
+
+        .logo {
+            img {
+                width: 100%;
+                object-fit: contain;
+            }
+        }
+
+        .project {
+            padding-top: 20px;
+            font-weight: 500;
+        }
+    }
+}

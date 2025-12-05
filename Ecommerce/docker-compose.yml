@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_webServices
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123
+      MYSQL_DATABASE: WebServices
+      MYSQL_USER: WebServices_user
+      MYSQL_PASSWORD: 123
+    ports:
+      - "3307:3306"
+
+

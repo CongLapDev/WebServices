@@ -1,0 +1,18 @@
+spring:
+  session:
+    jdbc:
+      initialize-schema: always
+  jpa:
+    hibernate:
+      ddl-auto: update
+    generate-ddl: true
+  mvc:
+    dispatch-options-request: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+#token time configuration
+nhs:
+  token:
+    accessTokenms: 720000000
+    refreshTokenms: 6048000

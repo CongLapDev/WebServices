@@ -1,0 +1,12 @@
+.address{
+    color:var(--primary-color-800);
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+.addressLine{
+    font-size: 0.85rem;
+    -webkit-line-clamp:2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color:var(--primary-color-600);
+}

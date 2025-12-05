@@ -1,0 +1,10 @@
+@import '../../global.module.scss';
+
+.card {
+    .ant-card-body {
+        @include mobile {
+            padding: 4px;
+        }
+    }
+
+}

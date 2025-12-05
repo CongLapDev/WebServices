@@ -1,0 +1,41 @@
+.sidebar{
+    list-style: none;
+    background-color: white;
+    padding: 0;
+    .item{
+        align-items: center;
+        padding: 8px 16px;
+        display: flex;
+        text-decoration: none;
+        color: inherit;
+        .line{
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: start;
+            .icon{
+                padding-top: 2px;
+                margin-right: 8px;
+            }
+            .label{
+                max-width: 150px;
+                text-overflow: ellipsis;
+                white-space:nowrap;
+                overflow: hidden;
+                font-weight: 500;
+                font-size: 0.95rem;
+            }
+        }
+        .arrow{
+            padding-top: 5px;
+        }
+        ~.expanded{
+            display: none;
+        }
+        &:focus{
+            ~.expanded{
+                display: block;
+            }
+        }
+    }
+}

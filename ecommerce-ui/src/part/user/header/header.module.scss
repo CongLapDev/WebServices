@@ -1,0 +1,126 @@
+@import '../../../global.module.scss';
+
+.header {
+    max-width: 1200px;
+    width: 100%;
+    height: 100%;
+
+    .logo {
+        .box {
+            display: flex;
+            align-items: center;
+
+            img {
+                max-height: 40px;
+                display: block;
+                aspect-ratio: 1/1;
+                margin-right: 8px;
+            }
+
+            h2 {
+                @include mobile {
+                    display: none;
+                }
+            }
+        }
+
+
+    }
+
+    .blank {
+        @include mobile {
+            display: none;
+        }
+    }
+
+    .searchTrigger {
+        --radius: 0.75rem;
+        --border-color: rgba(0, 0, 0, 0.118);
+        border-radius: var(--radius);
+        display: flex;
+        flex-direction: row;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        height: 32px;
+        color: rgba(0, 0, 0, 0.698);
+
+        .icon {
+            height: 32px;
+            display: flex;
+            align-items: center;
+            line-height: 0px;
+            height: 100%;
+            padding: 0px 8px;
+            border-radius: 0px var(--radius) 0px 0px;
+
+            &:hover {
+                background-color: var(--primary-color-200);
+            }
+        }
+    }
+
+
+
+    .item {
+        width: fit-content;
+        line-height: normal;
+
+        &.left {
+            justify-self: flex-start;
+        }
+
+        &.right {
+            justify-self: flex-end;
+        }
+
+        &.logo {
+            padding-right: 16px;
+
+            h2 {
+                line-height: 0px;
+            }
+        }
+
+        &.search {
+            @include mobile {
+                order: 4 !important;
+            }
+        }
+    }
+}
+
+.dropMenu {
+    padding-top: 18px;
+
+    .content {
+        background-color: white;
+        padding: 8px 16px;
+        border-radius: var(--base-radius);
+
+        .menuItem {
+            display: flex;
+            align-items: center;
+            padding: 0px;
+            min-width: 200px;
+
+            &.toggle {
+                justify-content: space-between;
+            }
+        }
+    }
+}
+
+.avatar {
+    max-height: 48px;
+    height: 100%;
+
+    padding: 6px;
+    line-height: 0px !important;
+    aspect-ratio: 1/1;
+
+    img {
+        border-radius: 50%;
+        width: 100%;
+        height: 100%;
+    }
+}

@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${HOST:localhost}:${PORT:3306}/${DATABASE}?createDatabaseIfNotExist=true
+    username: ${USER}
+    password: ${PASSWORD}
+  security:
+    oauth2:
+          client:
+            registration:
+              google:
+                client-id: ${GOOGLE_CLIENT_ID}
+                client-secret: ${GOOGLE_CLIENT_SECRET}
+                authorization-grant-type: authorization_code
+                scope:
+                  - email
+                  - profile
+payment:
+  zalo:
+    enabled: true
+    appid: 554
+    key1: 8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn
+    key2: uUfsWgfLkRLzq6W2uNXTCxrfxs51auny
+    endpoint:
+      create: https://sb-openapi.zalopay.vn/v2/create
+      query: https://sb-openapi.zalopay.vn/v2/query
+  # VnPay configuration commented out - not needed for sandbox
+  # vnpay:
+  #   version: 2.1.0
+  #   payurl: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  #   returnurl: /vnpay-payment
+  #   apiUrl: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+  #   tmnCode: "CTTVNP01"
+  #   vnp_HashSecret: "hgkdgkd"
+server:
+  port: 8085

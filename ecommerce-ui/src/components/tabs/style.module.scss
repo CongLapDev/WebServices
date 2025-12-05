@@ -1,0 +1,28 @@
+.tabPanel {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 16px;
+
+    &::-webkit-scrollbar {
+        opacity: 0;
+    }
+
+    .tab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        font-weight: 500;
+
+        &.active {
+            border-bottom: 2px solid var(--primary-color-800);
+            color: var(--primary-color-800);
+        }
+
+        span {
+            display: block;
+        }
+    }
+}
