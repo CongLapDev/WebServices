@@ -30,22 +30,32 @@ APIBase.interceptors.request.use(
         // Only add Authorization header if not already present
         if (!config.headers.Authorization) {
           // Ensure token doesn't already have "Bearer " prefix
-          const bearerToken = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+          const cleanToken = token.startsWith("Bearer ") ? token.substring(7).trim() : token.trim();
+          const bearerToken = `Bearer ${cleanToken}`;
           config.headers.Authorization = bearerToken;
           
           // Log for auth endpoints
           if (url.includes("/auth/") || url.includes("/api/v1/")) {
-            console.log("[ApiBase] ✓ Authorization header added:", bearerToken.slice(0, 30) + "...");
+            console.log("[ApiBase] ===== Adding Authorization Header =====");
+            console.log("[ApiBase] ✓ Authorization header added");
+            console.log("[ApiBase] Token source: localStorage");
+            console.log("[ApiBase] Token length:", cleanToken.length);
+            console.log("[ApiBase] Token (first 30 chars):", cleanToken.slice(0, 30) + "...");
+            console.log("[ApiBase] Full Authorization header (first 50 chars):", bearerToken.slice(0, 50) + "...");
+            console.log("[ApiBase] Request URL:", url);
+            console.log("[ApiBase] ========================================");
           }
         } else {
           if (url.includes("/auth/") || url.includes("/api/v1/")) {
             console.log("[ApiBase] Authorization header already present");
+            console.log("[ApiBase] Existing header value:", config.headers.Authorization.slice(0, 30) + "...");
           }
         }
       } else {
         // No token - log for auth endpoints
         if (url.includes("/auth/") || url.includes("/api/v1/")) {
           console.warn("[ApiBase] ⚠ No token in localStorage for authenticated endpoint:", url);
+          console.warn("[ApiBase] This request will likely return 401 or 403");
         }
       }
       // If no token, request will proceed without Authorization header

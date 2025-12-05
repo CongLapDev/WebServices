@@ -51,7 +51,9 @@ public class RequestUtils {
                 }
             }
         } catch (Exception e) {
-            // Return null on error - don't throw exception
+            // Log error for debugging
+            org.slf4j.LoggerFactory.getLogger(RequestUtils.class)
+                .warn("Error extracting JWT from header: {}", e.getMessage());
         }
         return null;
     }

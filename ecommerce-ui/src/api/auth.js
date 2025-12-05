@@ -18,28 +18,42 @@ const persistTokenFromResponse = (response) => {
   });
   
   // Backend sets token in cookies (httpOnly), but we need it in localStorage for Authorization header
-  // Try multiple locations for the token in response
+  // Backend also returns token in Authorization and X-Auth-Token headers (see AuthService.signInWithUserDetails)
+  // Try multiple locations for the token in response (priority order matters)
   const token =
+    response.headers?.["x-auth-token"] ||           // First: X-Auth-Token header (backend sets this)
+    response.headers?.["X-Auth-Token"] ||            // Case-insensitive check
+    response.headers?.authorization?.replace(/^Bearer\s+/i, "") ||  // Authorization header (remove Bearer prefix)
+    response.headers?.Authorization?.replace(/^Bearer\s+/i, "") ||  // Case-insensitive
     response.data?.token ||
     response.data?.accessToken ||
     response.data?.access_token ||
     response.data?.jwt ||
-    response.headers?.authorization ||
-    response.headers?.Authorization ||
-    response.headers?.["authorization"] ||
-    response.headers?.["Authorization"] ||
-    response.headers?.["x-auth-token"] ||
-    response.headers?.["X-Auth-Token"] ||
-    response.headers?.["set-cookie"]?.[0]?.split("=")[1]?.split(";")[0]; // Try to extract from Set-Cookie header
+    response.headers?.["set-cookie"]?.[0]?.split("=")[1]?.split(";")[0]; // Last resort: Try to extract from Set-Cookie header
   
   if (token) {
-    // Strip Bearer prefix if present
+    // Strip Bearer prefix if present (should already be removed, but double-check)
     const normalized = token.startsWith("Bearer ")
-      ? token.substring(7)
-      : token;
-    window.localStorage.setItem("AUTH_TOKEN", normalized);
-    console.log("[auth] Token saved to localStorage:", normalized.slice(0, 15) + "...");
-    return true; // Indicate success
+      ? token.substring(7).trim()
+      : token.trim();
+    
+    if (normalized && normalized.length > 0) {
+      window.localStorage.setItem("AUTH_TOKEN", normalized);
+      console.log("[TOKEN] ✓ Token extracted and saved to localStorage");
+      console.log("[TOKEN] Token source:", 
+        response.headers?.["x-auth-token"] ? "X-Auth-Token header" :
+        response.headers?.["X-Auth-Token"] ? "X-Auth-Token header (case)" :
+        response.headers?.authorization ? "Authorization header" :
+        response.headers?.Authorization ? "Authorization header (case)" :
+        response.data?.token ? "response.data.token" :
+        response.data?.accessToken ? "response.data.accessToken" :
+        "unknown");
+      console.log("[TOKEN] Token length:", normalized.length);
+      console.log("[TOKEN] Token (first 30 chars):", normalized.slice(0, 30) + "...");
+      return true; // Indicate success
+    } else {
+      console.warn("[TOKEN DEBUG] Token found but is empty after normalization");
+    }
   } else {
     // Backend uses cookies, so token might not be in response body/headers
     // Log all possible locations for debugging
@@ -63,11 +77,24 @@ const persistTokenFromResponse = (response) => {
  * @returns {Promise<User>} User object with account.roles
  */
 export const login = async (credentials) => {
+  console.log("[AUTH API] ===== login() called =====");
+  console.log("[AUTH API] Credentials:", { username: credentials.username, password: "***" });
+  console.log("[AUTH API] Endpoint: POST /api/auth/login");
+  console.log("[AUTH API] Base URL:", APIBase.defaults.baseURL);
+  console.log("[AUTH API] Full URL:", `${APIBase.defaults.baseURL}/api/auth/login`);
+  
   try {
     // Use REST-style /api/auth/login endpoint
+    console.log("[AUTH API] Sending request to backend...");
     const response = await APIBase.post("/api/auth/login", credentials, {
       headers: { "Content-Type": "application/json" },
     });
+    
+    console.log("[AUTH API] ✓ Response received");
+    console.log("[AUTH API] Response status:", response.status);
+    console.log("[AUTH API] Response headers:", response.headers);
+    console.log("[AUTH API] Response data keys:", response.data ? Object.keys(response.data) : []);
+    console.log("[AUTH API] Response data:", response.data);
     
     // Log token information
     const tokenBefore = response.data?.token ||
@@ -122,17 +149,41 @@ export const login = async (credentials) => {
     return response.data;
   } catch (error) {
     // Log full error details
-    console.error("[AUTH ERROR] login API failed:", {
-      message: error?.message,
-      status: error?.response?.status,
-      statusText: error?.response?.statusText,
-      data: error?.response?.data,
-      url: error?.config?.url,
-      method: error?.config?.method,
-      headers: error?.config?.headers,
-      requestData: error?.config?.data,
-      fullError: error
-    });
+    console.error("[AUTH ERROR] ========================================");
+    console.error("[AUTH ERROR] login() API call failed!");
+    console.error("[AUTH ERROR] ========================================");
+    console.error("[AUTH ERROR] Error message:", error?.message);
+    console.error("[AUTH ERROR] Error code:", error?.code);
+    
+    if (error?.response) {
+      // Server responded with error status
+      console.error("[AUTH ERROR] Server Response Error:");
+      console.error("[AUTH ERROR] - Status:", error.response.status);
+      console.error("[AUTH ERROR] - Status Text:", error.response.statusText);
+      console.error("[AUTH ERROR] - Response Data:", error.response.data);
+      console.error("[AUTH ERROR] - Request URL:", error.config?.url);
+      console.error("[AUTH ERROR] - Request Method:", error.config?.method);
+      console.error("[AUTH ERROR] - Request Base URL:", error.config?.baseURL);
+      console.error("[AUTH ERROR] - Full URL:", error.config?.baseURL + error.config?.url);
+      console.error("[AUTH ERROR] - Request Headers:", error.config?.headers);
+      console.error("[AUTH ERROR] - Request Data:", error.config?.data);
+    } else if (error?.request) {
+      // Request was made but no response received
+      console.error("[AUTH ERROR] Network Error - No response from server:");
+      console.error("[AUTH ERROR] - Request:", error.request);
+      console.error("[AUTH ERROR] - This usually means:");
+      console.error("[AUTH ERROR]   1. Backend server is not running at", APIBase.defaults.baseURL);
+      console.error("[AUTH ERROR]   2. CORS configuration issue");
+      console.error("[AUTH ERROR]   3. Network connectivity problem");
+      console.error("[AUTH ERROR]   4. Firewall blocking the request");
+    } else {
+      // Error setting up request
+      console.error("[AUTH ERROR] Request Setup Error:");
+      console.error("[AUTH ERROR] - Message:", error.message);
+    }
+    
+    console.error("[AUTH ERROR] Full error object:", error);
+    console.error("[AUTH ERROR] ========================================");
     
     // If 404, try fallback to /login (legacy endpoint)
     if (error?.response?.status === 404) {

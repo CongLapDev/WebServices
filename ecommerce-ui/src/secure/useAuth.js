@@ -46,12 +46,13 @@ function useAuth() {
      * so components can rely on Redux state being available after await.
      */
     const requestAuth = useCallback(() => {
-        console.log("[useAuth] requestAuth called");
+        console.log("[useAuth] ===== requestAuth() called =====");
         console.log("[useAuth] Current Redux user:", user ? `ID ${user.id}` : "null");
+        console.log("[useAuth] Current auth state:", state, "(2=loading, 1=loaded)");
         
         // If user already exists in Redux and state is loaded, return immediately
         if (user && state === 1) {
-            console.log("[useAuth] User already in Redux, state is loaded, returning immediately");
+            console.log("[useAuth] ✓ User already in Redux, state is loaded, returning immediately");
             return Promise.resolve(user);
         }
         
@@ -64,16 +65,38 @@ function useAuth() {
         }
         
         console.log("[useAuth] Token found, fetching user data...");
+        console.log("[useAuth] Token value (first 30 chars):", token.slice(0, 30) + "...");
+        console.log("[useAuth] Token length:", token.length);
+        console.log("[useAuth] Token format check:", token.startsWith("Bearer ") ? "Has Bearer prefix" : "No Bearer prefix");
+        
         setState(2); // Set loading state
         
+        // Verify token is still in localStorage before making request
+        const tokenBeforeRequest = window.localStorage.getItem("AUTH_TOKEN");
+        if (!tokenBeforeRequest || tokenBeforeRequest.trim() === "") {
+            console.error("[useAuth] ERROR: Token disappeared from localStorage before request!");
+            setState(1);
+            return Promise.reject(new Error("Token not found in localStorage"));
+        }
+        
+        // Try /api/v1/auth/user endpoint (primary endpoint for getting full user data)
+        console.log("[useAuth] Making GET request to /api/v1/auth/user");
+        console.log("[useAuth] APIBase.defaults.baseURL:", APIBase.defaults?.baseURL);
+        console.log("[useAuth] Full URL will be:", `${APIBase.defaults?.baseURL || ""}/api/v1/auth/user`);
+        console.log("[useAuth] Token will be added by ApiBase interceptor");
+        console.log("[useAuth] Token in localStorage:", tokenBeforeRequest ? "EXISTS" : "MISSING");
+        console.log("[useAuth] Token (first 30 chars):", tokenBeforeRequest.slice(0, 30) + "...");
+        console.log("[useAuth] Token length:", tokenBeforeRequest.length);
+        
+        // Try /api/v1/auth/user endpoint directly
         return APIBase.get("/api/v1/auth/user")
             .then(payload => {
-                console.log("[useAuth] API response received, status:", payload.status);
+                console.log("[useAuth] ✓ API response received, status:", payload.status);
                 return payload.data;
             })
             .then(data => {
                 if (data) {
-                    console.log("[useAuth] User data fetched, ID:", data?.id);
+                    console.log("[useAuth] ✓ User data fetched, ID:", data?.id);
                     const rawRoles = data?.account?.roles?.map(r => r.name) || [];
                     console.log("[useAuth] Raw roles from backend:", rawRoles);
                     
@@ -96,7 +119,7 @@ function useAuth() {
                             requestAnimationFrame(() => {
                                 // Double RAF ensures Redux state has propagated
                                 setState(1); // Set loaded state
-                                console.log("[useAuth] State set to loaded (1), Redux should have user");
+                                console.log("[useAuth] ✓ State set to loaded (1), Redux should have user");
                                 resolve(data);
                             });
                         });
@@ -108,18 +131,44 @@ function useAuth() {
                 }
             })
             .catch(e => {
-                console.error("[AUTH ERROR] requestAuth failed:", {
-                    message: e?.message,
-                    status: e?.response?.status,
-                    statusText: e?.response?.statusText,
-                    data: e?.response?.data,
-                    url: e?.config?.url,
-                    method: e?.config?.method,
-                    headers: e?.config?.headers,
-                    fullError: e
-                });
+                const status = e?.response?.status;
+                const errorData = e?.response?.data;
+                
+                console.error("[AUTH ERROR] ========================================");
+                console.error("[AUTH ERROR] requestAuth() failed!");
+                console.error("[AUTH ERROR] ========================================");
+                console.error("[AUTH ERROR] Status:", status);
+                console.error("[AUTH ERROR] Status Text:", e?.response?.statusText);
+                console.error("[AUTH ERROR] Error Message:", e?.message);
+                console.error("[AUTH ERROR] Response Data:", errorData);
+                console.error("[AUTH ERROR] Request URL:", e?.config?.url);
+                console.error("[AUTH ERROR] Request Method:", e?.config?.method);
+                console.error("[AUTH ERROR] Request Base URL:", e?.config?.baseURL);
+                console.error("[AUTH ERROR] Full URL:", e?.config?.baseURL + e?.config?.url);
+                console.error("[AUTH ERROR] Request Headers:", e?.config?.headers);
+                console.error("[AUTH ERROR] Has Authorization Header:", !!e?.config?.headers?.Authorization);
+                console.error("[AUTH ERROR] Authorization Header Value:", e?.config?.headers?.Authorization ? e.config.headers.Authorization.slice(0, 30) + "..." : "MISSING");
+                console.error("[AUTH ERROR] Token in localStorage:", window.localStorage.getItem("AUTH_TOKEN") ? "EXISTS" : "MISSING");
+                console.error("[AUTH ERROR] ========================================");
+                
+                // For 403 errors, provide specific guidance
+                if (status === 403) {
+                    console.error("[AUTH ERROR] 403 Forbidden - Possible causes:");
+                    console.error("[AUTH ERROR] 1. Token is invalid or expired");
+                    console.error("[AUTH ERROR] 2. User doesn't have permission to access /api/v1/auth/user");
+                    console.error("[AUTH ERROR] 3. JWT filter didn't set authentication correctly");
+                    console.error("[AUTH ERROR] 4. Token format is incorrect (missing Bearer prefix?)");
+                    console.error("[AUTH ERROR] 5. Backend security configuration issue");
+                    console.error("[AUTH ERROR] ========================================");
+                    console.error("[AUTH ERROR] NOTE: This error is non-blocking if called after login.");
+                    console.error("[AUTH ERROR] Login flow will continue with user data from login response.");
+                    console.error("[AUTH ERROR] ========================================");
+                } else if (status === 401) {
+                    console.error("[AUTH ERROR] 401 Unauthorized - Token is invalid or missing");
+                }
+                
                 setState(1); // Set loaded state even on error
-                throw e;
+                throw e; // Re-throw to allow caller to handle
             });
     }, [user, dispatch, state]);
     

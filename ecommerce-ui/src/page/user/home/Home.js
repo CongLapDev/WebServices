@@ -14,22 +14,43 @@ function Home() {
     const [accessories, setAccessories] = useState({ content: [] });
     const [monitors, setmonitors] = useState({ content: [] });
     
+    // Debug logging for Home component
     useEffect(() => {
+        console.log("[Home] ===== Home component mounted/updated =====");
+        console.log("[Home] Auth state:", authState);
+        console.log("[Home] User:", user ? `ID ${user.id}, Name: ${user.firstname} ${user.lastname}` : "null");
+        console.log("[Home] User roles:", user?.account?.roles?.map(r => r.name) || []);
+        console.log("[Home] hasRole('USER'):", hasRole("USER"));
+        console.log("[Home] Current path:", window.location.pathname);
+    }, [authState, user, hasRole]);
+    
+    useEffect(() => {
+        console.log("[Home] Fetching products...");
         APIBase.get("api/v2/product?orderBy=id&order=DESC&page=0&size=6").then(payload => {
             setNewests(payload.data);
-        }).catch(console.log)
+            console.log("[Home] Newest products loaded:", payload.data?.content?.length || 0);
+        }).catch(err => {
+            console.error("[Home] Error loading newest products:", err);
+        });
         APIBase.get("api/v2/product?orderBy=id&order=DESC&page=0&size=6&category=7").then(payload => {
             setAccessories(payload.data);
-        }).catch(console.log)
+            console.log("[Home] Accessories loaded:", payload.data?.content?.length || 0);
+        }).catch(err => {
+            console.error("[Home] Error loading accessories:", err);
+        });
         APIBase.get("api/v2/product?orderBy=id&order=DESC&page=0&size=6&category=6").then(payload => {
             setmonitors(payload.data);
-        }).catch(console.log)
-
+            console.log("[Home] Monitors loaded:", payload.data?.content?.length || 0);
+        }).catch(err => {
+            console.error("[Home] Error loading monitors:", err);
+        });
     }, [])
     
     // Show welcome message if user is logged in
     const isAuthenticated = authState === 1 && user && hasRole("USER");
     const userName = user ? `${user.firstname || ""} ${user.lastname || ""}`.trim() : "";
+    
+    console.log("[Home] Render - isAuthenticated:", isAuthenticated, "userName:", userName);
     
     return (<Row justify="center" gutter={[16, 16]}>
         <Col span={24}><UserCarousel className={style.carousel} /></Col>

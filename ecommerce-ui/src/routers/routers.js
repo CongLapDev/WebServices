@@ -24,39 +24,73 @@ import UserResultPage from "../page/user/result/UserResultPage.js";
 import UserOrderCheckOutPage from "../page/user/user-order-checkout-page/UserOrderCheckoutPage.js";
 import ZaloPayProcess from "../page/user/zalopay-result-page/index.js";
 import ForgotPasswordPage from "../page/user/forgot-password/ForgotPasswordPage.js";
-import AdminLoginPage from "../page/admin/login/AdminLoginPage.js";
 
 export const publicRouter = [
     { path: "/login", component: LoginPage },
-    { path: "/admin/login", component: AdminLoginPage },
     { path: "/register", component: Register },
     { path: "/forgot-password", component: ForgotPasswordPage },
     { path: "/product", component: ProductPage, layout: HeadOnly },
-    { path: "/home", component: Home, layout: HeadOnly },
     { path: "/", component: Home, layout: HeadOnly },
     { path: "/product/search", component: SearchProductPage, layout: HeadOnly },
-]
+];
 export const userRouter = [
-    { 'path': "/result", 'component': UserResultPage, 'layout': HeadOnly },
-    { 'path': "/user", 'component': Personal, 'layout': HeadOnly },
-    { 'path': "/user/address", 'component': UserAddressPage, 'layout': HeadOnly },
-    { 'path': "/cart", 'component': UserCartPage, 'layout': HeadOnly },
-    { 'path': "/checkout", 'component': UserOrderCheckOutPage, 'layout': HeadOnly },
-    { 'path': "/order", 'component': UserOrderDetailPage, 'layout': HeadOnly },
-    { 'path': "/zalopay/purchase", 'component': ZaloPayProcess, 'layout': HeadOnly },
+    // /home route must be FIRST in userRouter to ensure it's matched before other routes
+    { path: "/home", component: Home, layout: HeadOnly },
+    { path: "/result", component: UserResultPage, layout: HeadOnly },
+    { path: "/user", component: Personal, layout: HeadOnly },
+    { path: "/user/address", component: UserAddressPage, layout: HeadOnly },
+    { path: "/cart", component: UserCartPage, layout: HeadOnly },
+    { path: "/checkout", component: UserOrderCheckOutPage, layout: HeadOnly },
+    { path: "/order", component: UserOrderDetailPage, layout: HeadOnly },
+    { path: "/zalopay/purchase", component: ZaloPayProcess, layout: HeadOnly },
 
-
-    { 'path': "/admin", 'component': AdminDashboardPage, 'layout': SidebarLayout },
-    { 'path': "/admin/order-manage", 'component': AdminOrderManagePage, 'layout': SidebarLayout },
-    { 'path': "/admin/order", 'component': AdminOrderDetailPage, 'layout': SidebarLayout },
-    { 'path': "/admin/product-manage", 'component': AdminProductManagePage, 'layout': SidebarLayout },
-]
+    { path: "/admin", component: AdminDashboardPage, layout: SidebarLayout },
+    { path: "/admin/order-manage", component: AdminOrderManagePage, layout: SidebarLayout },
+    {
+        path: "/admin/order",
+        component: AdminOrderDetailPage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/product-manage",
+        component: AdminProductManagePage,
+        layout: SidebarLayout,
+    },
+];
 export const adminRouter = [
-    { 'path': "/admin/product", 'component': ProductDetailPage, 'layout': SidebarLayout },
-    { 'path': "/admin/category", 'component': AdminCategoryManagePage, 'layout': SidebarLayout },
-    { 'path': "/admin/category/:id", 'component': AdminCategoryDetailPage, 'layout': SidebarLayout },
-    { 'path': "/admin/warehouse", 'component': AdminWarehouseManagePage, 'layout': SidebarLayout },
-    { 'path': "/admin/warehouse/detail", 'component': AdminWareHouseDetailPage, 'layout': SidebarLayout },
-    { 'path': "/admin/user/manage", 'component': AdminUserManagePage, 'layout': SidebarLayout },
-    { 'path': "/admin/user", 'component': AdminUserDetailPage, 'layout': SidebarLayout }
-]
+    {
+        path: "/admin/product",
+        component: ProductDetailPage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/category",
+        component: AdminCategoryManagePage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/category/:id",
+        component: AdminCategoryDetailPage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/warehouse",
+        component: AdminWarehouseManagePage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/warehouse/detail",
+        component: AdminWareHouseDetailPage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/user/manage",
+        component: AdminUserManagePage,
+        layout: SidebarLayout,
+    },
+    {
+        path: "/admin/user",
+        component: AdminUserDetailPage,
+        layout: SidebarLayout,
+    },
+];

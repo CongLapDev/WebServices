@@ -2,6 +2,7 @@ package com.nhs.individual.secure;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,12 +19,38 @@ import static com.nhs.individual.utils.Constant.REFRESH_TOKEN_AGE;
 public class JwtProvider {
     @Value("${nhs.token.accessTokenms}")
     private long ACCESS_TOKEN_EXPIRED;
+    
+    @Value("${nhs.token.secret:}")
+    private String jwtSecret;
 
     private final Logger log = LoggerFactory.getLogger(JwtProvider.class);
+    private SecretKey secretKey;
 
-    // Secure 256-bit key for HS256 – generated once per application lifecycle
-    // This replaces any short manual keys and satisfies jjwt's minimum length requirements.
-    private final SecretKey secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    @PostConstruct
+    public void init() {
+        if (jwtSecret != null && !jwtSecret.trim().isEmpty()) {
+            // Use configured secret key
+            log.info("[JwtProvider] Using configured JWT secret key from properties");
+            // Convert string to SecretKey for HS256 (minimum 256 bits = 32 bytes)
+            byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            // Ensure key is at least 32 bytes (256 bits) for HS256
+            if (keyBytes.length < 32) {
+                log.warn("[JwtProvider] JWT secret is less than 32 bytes, padding to 32 bytes");
+                byte[] paddedKey = new byte[32];
+                System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
+                secretKey = Keys.hmacShaKeyFor(paddedKey);
+            } else {
+                secretKey = Keys.hmacShaKeyFor(keyBytes);
+            }
+            log.info("[JwtProvider] JWT secret key initialized successfully (length: {} bytes)", keyBytes.length);
+        } else {
+            // Generate a random key (for development only - NOT recommended for production)
+            log.error("[JwtProvider] ⚠⚠⚠ WARNING: No JWT secret configured!");
+            log.error("[JwtProvider] ⚠⚠⚠ Generating random key - tokens will be invalid after server restart!");
+            log.error("[JwtProvider] ⚠⚠⚠ Set 'nhs.token.secret' in application.yml to fix this!");
+            secretKey = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        }
+    }
 
     private SecretKey getKey() {
         return secretKey;
@@ -62,11 +89,18 @@ public class JwtProvider {
         Claims claims=null;
         try{
             claims=extractClaims(token);
+            log.debug("Token validated successfully, subject: {}", claims.getSubject());
             return claims;
-        }catch (UnsupportedJwtException|MalformedJwtException|IllegalArgumentException exception){
-            log.atWarn().log("Token is invalid");
+        }catch (UnsupportedJwtException e){
+            log.warn("Token is unsupported: {}", e.getMessage());
+        }catch (MalformedJwtException e){
+            log.warn("Token is malformed: {}", e.getMessage());
+        }catch (IllegalArgumentException e){
+            log.warn("Token is invalid (illegal argument): {}", e.getMessage());
         }catch (ExpiredJwtException e){
-            log.atWarn().log("Token is expired");
+            log.warn("Token is expired. Expired at: {}", e.getClaims().getExpiration());
+        }catch (Exception e){
+            log.warn("Unexpected error validating token: {}", e.getMessage());
         }
         return null;
     }

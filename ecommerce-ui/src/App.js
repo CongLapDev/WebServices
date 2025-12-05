@@ -57,7 +57,7 @@ function App() {
                                     key={index}
                                     path={page.path || "/"}
                                     element={
-                                        <RoleBaseAuthorize role={["USER"]}>
+                                        <RoleBaseAuthorize path={page.path} role={["USER"]}>
                                             <Layout>
                                                 <Page />
                                             </Layout>
