@@ -13,6 +13,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name = "product_item")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ProductItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +22,7 @@ public class ProductItem {
 
     @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
     @JoinColumn(name = "product_id")
-    @JsonIgnoreProperties("productItems")
+    @JsonIgnoreProperties({"productItems","hibernateLazyInitializer", "handler"})
     @NotNull(message = "Product Information is required",groups = ProductItemValidation.onCreate.class)
     private Product product;
 

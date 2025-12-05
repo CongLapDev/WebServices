@@ -3,6 +3,7 @@ package com.nhs.individual.service;
 import com.nhs.individual.domain.Account;
 import com.nhs.individual.domain.RefreshToken;
 import com.nhs.individual.domain.User;
+import com.nhs.individual.dto.UserLoginDto;
 import com.nhs.individual.exception.InvalidTokenException;
 import com.nhs.individual.exception.RegisterUserException;
 import com.nhs.individual.exception.ResourceNotFoundException;
@@ -123,26 +124,39 @@ public class AuthService {
     }
 
     /**
-     * Authenticates user and returns User object with account and roles
+     * Authenticates user and returns User DTO with account and roles
      * This method is used by the /api/auth/login endpoint
+     * 
+     * Uses UserLoginDto to prevent triggering unnecessary database queries
+     * (e.g., comment table) that aren't needed for authentication
      */
-    public ResponseEntity<User> signInWithUserDetails(String username, String password){
+    public ResponseEntity<UserLoginDto> signInWithUserDetails(String username, String password){
         Authentication authentication = new UsernamePasswordAuthenticationToken(username, password);
         Authentication auth = authenticationManager.authenticate(authentication);
         SecurityContextHolder.getContext().setAuthentication(auth);
         IUserDetail userDetail = (IUserDetail) auth.getPrincipal();
         
         // Get the full User object with account and roles
+        // Use DTO to prevent triggering lazy loading of relationships (like comments)
         User user = userService.findByAccountId(userDetail.getId());
+        UserLoginDto userDto = new UserLoginDto(user);
         
-        // Set cookies in response headers
+        // Generate the access token
+        String accessToken = jwtProvider.generateToken(username);
+        
+        // Set cookies in response headers (for httpOnly cookie support)
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.SET_COOKIE, accessTokenCookie(username).toString());
         headers.add(HttpHeaders.SET_COOKIE, refreshTokenCookie(userDetail.getId()).toString());
         headers.add("Withcredentials", "true");
         
+        // ALSO add token to response headers so frontend can extract it
+        // Frontend needs this to store in localStorage for Authorization header
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        headers.add("X-Auth-Token", accessToken);
+        
         return ResponseEntity.ok()
                 .headers(headers)
-                .body(user);
+                .body(userDto);
     }
 }

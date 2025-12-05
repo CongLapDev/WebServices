@@ -32,6 +32,7 @@ export const publicRouter = [
     { path: "/register", component: Register },
     { path: "/forgot-password", component: ForgotPasswordPage },
     { path: "/product", component: ProductPage, layout: HeadOnly },
+    { path: "/home", component: Home, layout: HeadOnly },
     { path: "/", component: Home, layout: HeadOnly },
     { path: "/product/search", component: SearchProductPage, layout: HeadOnly },
 ]

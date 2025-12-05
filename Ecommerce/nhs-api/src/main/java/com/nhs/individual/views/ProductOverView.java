@@ -11,7 +11,7 @@ import org.hibernate.annotations.Subselect;
 @Setter
 @Entity
 @Immutable
-@Subselect(value = "select pd.id,pd.picture,pd.status,pd.category_id,pd.description,pd.name,pd.manufacturer,\n" +
+@Subselect(value = "select pd.id,pd.picture,pd.category_id,pd.description,pd.name,pd.manufacturer,\n" +
         "avg(cmt.rate) as rate,\n" +
         "min(pdi.price) as min_price,\n" +
         "max(pdi.price) as max_price,\n" +
@@ -26,7 +26,6 @@ public class ProductOverView {
     @Id
     private Integer id;
     private String picture;
-    private Integer status;
     private String description;
     private String name;
     private String manufacturer;

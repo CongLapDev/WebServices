@@ -48,10 +48,10 @@ public class AuthenticationAPI {
      *   "password": "password123"
      * }
      * 
-     * Response: User object with account and roles
+     * Response: UserLoginDto object with account and roles (prevents unnecessary DB queries)
      */
     @PostMapping("/api/auth/login")
-    public ResponseEntity<User> loginWithUserDetails(@Valid @RequestBody LoginRequest loginRequest){
+    public ResponseEntity<?> loginWithUserDetails(@Valid @RequestBody LoginRequest loginRequest){
         return authService.signInWithUserDetails(loginRequest.getUsername(), loginRequest.getPassword());
     }
 

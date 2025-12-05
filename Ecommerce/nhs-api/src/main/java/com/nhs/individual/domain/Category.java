@@ -13,6 +13,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "category")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,11 +29,11 @@ public class Category {
     private String description;
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.MERGE)
     @JoinColumn(name = "parent_category_id")
-    @JsonIgnoreProperties({"children","variations"})
+    @JsonIgnoreProperties({"children","variations","hibernateLazyInitializer", "handler"})
     private Category parent;
 
     @OneToMany(mappedBy = "parent",fetch = FetchType.LAZY,cascade = {CascadeType.MERGE,CascadeType.DETACH,CascadeType.PERSIST,CascadeType.REMOVE})
-    @JsonIgnoreProperties({"parent"})
+    @JsonIgnoreProperties({"parent","hibernateLazyInitializer", "handler"})
     private List<Category> children;
 
 
