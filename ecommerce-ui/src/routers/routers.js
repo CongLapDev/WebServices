@@ -43,7 +43,9 @@ export const userRouter = [
     { path: "/checkout", component: UserOrderCheckOutPage, layout: HeadOnly },
     { path: "/order", component: UserOrderDetailPage, layout: HeadOnly },
     { path: "/zalopay/purchase", component: ZaloPayProcess, layout: HeadOnly },
-
+];
+export const adminRouter = [
+    // /admin route must be FIRST in adminRouter to ensure it's matched before other admin routes
     { path: "/admin", component: AdminDashboardPage, layout: SidebarLayout },
     { path: "/admin/order-manage", component: AdminOrderManagePage, layout: SidebarLayout },
     {
@@ -56,8 +58,6 @@ export const userRouter = [
         component: AdminProductManagePage,
         layout: SidebarLayout,
     },
-];
-export const adminRouter = [
     {
         path: "/admin/product",
         component: ProductDetailPage,

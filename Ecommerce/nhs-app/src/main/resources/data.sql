@@ -1,4 +1,4 @@
-use eCommerce;
+use WebServices;
 insert into role(name) values ("USER"),("ADMIN"),("SUPER_ADMIN");
 insert into shipping_method(name,price) values("STANDARD",50000),("FAST",10000),("EXPRESS",20000);
 insert into country(name) values("Viet Name"),("USA"),("China");

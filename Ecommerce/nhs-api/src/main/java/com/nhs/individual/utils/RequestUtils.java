@@ -43,10 +43,10 @@ public class RequestUtils {
             }
             String authHeader = request.getHeader("Authorization");
             if (authHeader != null && !authHeader.isEmpty()) {
-                String token = authHeader;
-                // Remove "Bearer " prefix if present
-                if (authHeader.startsWith("Bearer ")) {
-                    token = authHeader.substring(7);
+                String token = authHeader.trim();
+                // Remove "Bearer " prefix (case-insensitive) if present
+                if (token.toLowerCase().startsWith("bearer ")) {
+                    token = token.substring(7).trim();
                 }
                 if (!token.isEmpty()) {
                     org.slf4j.LoggerFactory.getLogger(RequestUtils.class)

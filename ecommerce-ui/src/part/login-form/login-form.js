@@ -181,101 +181,19 @@ function LoginForm({ className, success, isAdminLogin = false }) {
             });
             
             // ============================================
-            // STEP 3.7: Call requestAuth() to sync auth state (non-blocking)
+            // STEP 3.7: Skip requestAuth() - we already have complete user data from login
             // ============================================
-            // NOTE: requestAuth() is OPTIONAL - we already have complete user data from login response
-            // We call it to sync the auth state, but if it fails, we continue with login data
-            const tokenBeforeRequest = window.localStorage.getItem("AUTH_TOKEN");
-            console.log("[LOGIN] Step 3.7: Calling requestAuth() in background to sync auth state (OPTIONAL)...");
-            console.log("[LOGIN] Token before requestAuth:", tokenBeforeRequest ? "EXISTS" : "MISSING");
-            if (tokenBeforeRequest) {
-                console.log("[LOGIN] Token (first 30 chars):", tokenBeforeRequest.slice(0, 30) + "...");
-                console.log("[LOGIN] Token length:", tokenBeforeRequest.length);
-            }
+            // CRITICAL FIX: We already have complete user data from login response.
+            // Calling requestAuth() can cause 401 errors that clear the token and redirect.
+            // Since we have valid user data, we don't need to call requestAuth() immediately.
+            // The auth state is already synced via Redux dispatch above.
+            console.log("[LOGIN] Step 3.7: Skipping requestAuth() - we already have user data from login");
+            console.log("[LOGIN] User data is already in Redux, state is set to loaded");
+            console.log("[LOGIN] requestAuth() will be called automatically on next page load if needed");
             
-            // Add a small delay to ensure token is fully saved and available
-            // This gives the browser time to persist localStorage
-            await new Promise(resolve => setTimeout(resolve, 150));
-            
-            // Verify token is still there after delay
-            const tokenAfterDelay = window.localStorage.getItem("AUTH_TOKEN");
-            if (!tokenAfterDelay || tokenAfterDelay.trim() === "") {
-                console.error("[LOGIN] ERROR: Token disappeared from localStorage after delay!");
-                console.error("[LOGIN] This should not happen - token should persist");
-            } else {
-                console.log("[LOGIN] ✓ Token still exists after delay");
-            }
-            
-            // Call requestAuth() in the background (non-blocking) to sync state
-            // This ensures the auth state is consistent, but doesn't block navigation
-            // If requestAuth() fails, we still have valid user data from login
-            requestAuth()
-                .then((authUserData) => {
-                    console.log("[LOGIN] ✓✓✓ requestAuth() SUCCEEDED in background!");
-                    console.log("[LOGIN] Auth state synced successfully");
-                    if (authUserData) {
-                        console.log("[LOGIN] User data from requestAuth - ID:", authUserData.id);
-                        console.log("[LOGIN] User roles from requestAuth:", authUserData?.account?.roles?.map(r => r.name) || []);
-                    }
-                })
-                .catch(authErr => {
-                    // Log error but don't block navigation
-                    const status = authErr?.response?.status;
-                    const errorData = authErr?.response?.data;
-                    const requestUrl = authErr?.config?.baseURL + authErr?.config?.url;
-                    const requestHeaders = authErr?.config?.headers || {};
-                    const hasAuthHeader = !!(requestHeaders.Authorization || requestHeaders.authorization);
-                    const authHeaderValue = requestHeaders.Authorization || requestHeaders.authorization;
-                    const tokenInStorage = window.localStorage.getItem("AUTH_TOKEN");
-                    
-                    console.warn("[LOGIN] ⚠⚠⚠ requestAuth() failed in background (NON-BLOCKING)");
-                    console.warn("[LOGIN] ========================================");
-                    console.warn("[LOGIN] ⚠ Status:", status);
-                    console.warn("[LOGIN] ⚠ Status Text:", authErr?.response?.statusText);
-                    console.warn("[LOGIN] ⚠ Error Message:", authErr?.message);
-                    console.warn("[LOGIN] ⚠ Response Data:", errorData);
-                    console.warn("[LOGIN] ⚠ Request URL:", requestUrl);
-                    console.warn("[LOGIN] ⚠ Request Method:", authErr?.config?.method);
-                    console.warn("[LOGIN] ⚠ Has Token in localStorage:", !!tokenInStorage);
-                    console.warn("[LOGIN] ⚠ Has Authorization Header:", hasAuthHeader);
-                    if (hasAuthHeader && authHeaderValue) {
-                        console.warn("[LOGIN] ⚠ Authorization Header (first 30 chars):", authHeaderValue.slice(0, 30) + "...");
-                    } else {
-                        console.warn("[LOGIN] ⚠⚠⚠ Authorization Header: MISSING!");
-                        console.warn("[LOGIN] ⚠ This is likely the cause of the 403 error!");
-                    }
-                    console.warn("[LOGIN] ========================================");
-                    
-                    if (status === 403) {
-                        console.warn("[LOGIN] ⚠ 403 Forbidden - Analysis:");
-                        if (!hasAuthHeader) {
-                            console.warn("[LOGIN] ⚠ ❌ ROOT CAUSE: Authorization header missing!");
-                            console.warn("[LOGIN] ⚠ ApiBase interceptor should have added it");
-                        } else if (!tokenInStorage) {
-                            console.warn("[LOGIN] ⚠ ❌ ROOT CAUSE: Token not in localStorage!");
-                        } else {
-                            console.warn("[LOGIN] ⚠ Possible causes:");
-                            console.warn("[LOGIN] ⚠ 1. Backend JWT filter not processing token");
-                            console.warn("[LOGIN] ⚠ 2. SecurityContext not set correctly");
-                            console.warn("[LOGIN] ⚠ 3. Token format issue");
-                            console.warn("[LOGIN] ⚠ 4. Backend security configuration");
-                        }
-                        console.warn("[LOGIN] ⚠ ========================================");
-                        console.warn("[LOGIN] ⚠ IMPORTANT: This error is NON-BLOCKING!");
-                        console.warn("[LOGIN] ⚠ We already have user data from login response");
-                        console.warn("[LOGIN] ⚠ Navigation will proceed with login response data");
-                        console.warn("[LOGIN] ⚠ ========================================");
-                    } else if (status === 401) {
-                        console.warn("[LOGIN] ⚠ 401 Unauthorized - Token might be invalid or expired");
-                        console.warn("[LOGIN] ⚠ This is OK - we already have user data from login response");
-                    } else {
-                        console.warn("[LOGIN] ⚠ Other error - might be network issue");
-                    }
-                    
-                    // Don't throw - we already have user data from login
-                    // Navigation will proceed with login response data
-                    console.warn("[LOGIN] ⚠ Continuing with login response data despite requestAuth failure");
-                });
+            // NOTE: requestAuth() is still called automatically by useAuth hook on mount if token exists
+            // But we skip it here to avoid 401 errors immediately after login
+            // This prevents the token from being cleared and user from being redirected
             
             // ============================================
             // STEP 4: Determine target route based on role

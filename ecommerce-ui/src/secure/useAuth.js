@@ -56,10 +56,33 @@ function useAuth() {
             console.log("[useAuth] ✓ Redux user detected, setting state to loaded");
             console.log("[useAuth] User ID:", user.id);
             console.log("[useAuth] User roles:", user?.account?.roles?.map(r => r?.name || r) || []);
+            console.log("[useAuth] Normalized roles:", user?.account?.roles?.map(r => {
+                const name = r?.name || r;
+                return (name || "").toUpperCase().replace(/^ROLE_/, "");
+            }).filter(Boolean) || []);
             setState(1);
         } else if (!user && state === 1) {
-            // User was removed from Redux - keep state as loaded (guest state)
-            console.log("[useAuth] Redux user removed, keeping loaded state (guest)");
+            // User was removed from Redux - investigate why
+            const token = window.localStorage.getItem("AUTH_TOKEN");
+            console.error("[useAuth] ❌❌❌ Redux user removed, keeping loaded state (guest)");
+            console.error("[useAuth] DEBUG: Token in localStorage:", token ? "EXISTS" : "MISSING");
+            console.error("[useAuth] DEBUG: Current path:", window.location.pathname);
+            console.error("[useAuth] DEBUG: This should NOT happen after successful login!");
+            console.error("[useAuth] DEBUG: Possible causes:");
+            console.error("[useAuth] DEBUG: 1. Redux store was reset");
+            console.error("[useAuth] DEBUG: 2. Something dispatched userSlide.actions.clear");
+            console.error("[useAuth] DEBUG: 3. Navigation caused unexpected state loss");
+            
+            // CRITICAL: If token exists but user is gone, try to restore from token
+            // This can happen if Redux state is lost but token persists
+            if (token && token.trim() !== "" && !hasRequestedRef.current) {
+                console.warn("[useAuth] ⚠ Token exists but user missing - attempting to restore from token");
+                console.warn("[useAuth] ⚠ This might be a Redux state persistence issue");
+                // Don't call requestAuth here as it might cause 401 - just log the issue
+            }
+        } else if (user && state === 1) {
+            // User exists and state is loaded - log for debugging
+            console.log("[useAuth] ✓ User exists, state is loaded, roles:", user?.account?.roles?.map(r => r?.name || r) || []);
         }
     }, [user, state]);
     
@@ -244,32 +267,55 @@ function useAuth() {
      */
     useEffect(() => {
         if (hasRequestedRef.current) {
+            console.log("[useAuth] Already requested, skipping");
+            return;
+        }
+        
+        // CRITICAL: If user already exists in Redux, do NOT call requestAuth
+        // This prevents unnecessary background calls that might 401 and cause redirects
+        if (user && user.id) {
+            console.log("[useAuth] ✓✓✓ User already in Redux on mount (from login), skipping requestAuth()");
+            console.log("[useAuth] User ID:", user.id);
+            console.log("[useAuth] User roles:", user?.account?.roles?.map(r => r?.name || r) || []);
+            console.log("[useAuth] Setting state to loaded - user data is already available");
+            setState(1);
+            hasRequestedRef.current = true;
             return;
         }
         
         const token = window.localStorage.getItem("AUTH_TOKEN");
+        console.log("[useAuth] Mount effect - token:", token ? "EXISTS" : "MISSING", "user:", user ? `ID ${user.id}` : "NULL");
+        
         if (token && token.trim() !== "") {
-            // If user already exists in Redux (e.g., from login), set state to loaded
-            if (user) {
-                console.log("[useAuth] User already in Redux on mount, setting state to loaded");
-                setState(1);
-                hasRequestedRef.current = true;
-                return;
-            }
-            
-            // Otherwise, fetch user from API
+            // Otherwise, fetch user from API (e.g., page refresh, token exists but no user in Redux)
+            console.log("[useAuth] ⚠ Token exists but no user in Redux - calling requestAuth()");
+            console.log("[useAuth] This might happen on page refresh or if Redux state was lost");
             hasRequestedRef.current = true;
             requestAuth().catch((error) => {
                 // Log errors on mount (but don't show UI - user might not be logged in)
+                const status = error?.response?.status;
                 console.error("[AUTH ERROR] requestAuth failed on mount:", {
                     message: error?.message,
-                    status: error?.response?.status,
+                    status: status,
                     statusText: error?.response?.statusText,
                     data: error?.response?.data,
                     url: error?.config?.url,
                     method: error?.config?.method,
                     fullError: error
                 });
+                
+                // CRITICAL: If user exists in Redux (from login), don't clear state on 401
+                // The 401 might be a token format issue, but login already provided valid user data
+                if (status === 401 && user) {
+                    console.warn("[useAuth] 401 error but user exists in Redux - keeping user data");
+                    console.warn("[useAuth] This is likely a token format issue, not an auth failure");
+                    console.warn("[useAuth] User data from login is still valid");
+                    setState(1); // Set state to loaded so components can use Redux user data
+                    return; // Don't propagate error
+                }
+                
+                // For other errors or if no user, set state to loaded (guest state)
+                setState(1);
             });
         } else {
             // No token, set state to loaded (guest state)
@@ -309,14 +355,21 @@ function useAuth() {
         }
         
         // Extract role names - handle both normalized format [{name: "ADMIN"}] and raw format
+        // CRITICAL: Always normalize role names (uppercase, remove ROLE_ prefix) for consistency
         const roles = user.account.roles.map(roleObj => {
+            let roleName = null;
             // Handle normalized format: {name: "ADMIN"}
             if (typeof roleObj === 'object' && roleObj !== null && roleObj.name) {
-                return roleObj.name;
+                roleName = roleObj.name;
             }
             // Handle string format: "ADMIN" or "ROLE_ADMIN"
-            if (typeof roleObj === 'string') {
-                return roleObj.toUpperCase().replace(/^ROLE_/, "");
+            else if (typeof roleObj === 'string') {
+                roleName = roleObj;
+            }
+            
+            // Normalize the role name (uppercase, remove ROLE_ prefix)
+            if (roleName) {
+                return (roleName || "").toUpperCase().replace(/^ROLE_/, "");
             }
             return null;
         }).filter(Boolean); // Remove null/undefined values

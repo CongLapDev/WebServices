@@ -27,9 +27,16 @@ export const userSlide = createSlice({
     name: "user",
     reducers: {
         clear: (state, action) => {
+            // DEBUG: Log when user is being cleared
+            console.log("[Redux] userSlide.actions.clear called");
+            console.log("[Redux] Current user before clear:", state ? `ID ${state.id}` : "null");
+            console.log("[Redux] Stack trace:", new Error().stack);
             return null;
         },
         create: (state, action) => {
+            // DEBUG: Log when user is being created
+            console.log("[Redux] userSlide.actions.create called");
+            console.log("[Redux] User data:", action.payload ? `ID ${action.payload.id}` : "null");
             return action.payload;
         }
     },

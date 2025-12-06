@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 public class AccountStatisticService {
     AccountStatisticRepository repository;
     public Accountstatisticsview findAll(){
-        return repository.findAll().get(0);
+        var list = repository.findAll();
+        if (list == null || list.isEmpty()) {
+            // No statistics available yet for this account/user; return null to avoid IndexOutOfBounds
+            return null;
+        }
+        return list.get(0);
     }
 }

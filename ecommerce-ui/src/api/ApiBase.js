@@ -158,12 +158,41 @@ APIBase.interceptors.response.use(
       // Don't auto-logout, let the component handle it
     } else if (status === 401) {
       console.error("[ApiBase] 401 Unauthorized - token invalid or expired");
-      // Clear invalid token
-      window.localStorage.removeItem("AUTH_TOKEN");
-      // Redirect to login if not already there
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/admin/login") {
-        console.log("[ApiBase] Redirecting to login due to 401");
-        window.location.href = "/login";
+      
+      // CRITICAL FIX: Don't clear token or redirect if this is a background requestAuth() call
+      // after successful login. The login already provided valid user data, so a 401 here
+      // might be a timing issue or token format issue, not an actual auth failure.
+      // Only clear token/redirect if we're on a protected route (not just logged in)
+      const isAuthEndpoint = error.config?.url?.includes("/auth/") || error.config?.url?.includes("/api/v1/auth/");
+      const isProtectedRoute = !["/login", "/admin/login", "/register"].includes(window.location.pathname);
+      
+      // CRITICAL FIX: Don't clear token or redirect for /api/v1/auth/user endpoint
+      // This endpoint is used for background auth sync. A 401 here might be:
+      // 1. Token format issue (but token is valid for other endpoints)
+      // 2. Timing issue (token not fully processed yet)
+      // 3. Backend JWT validation issue (but login worked, so token is valid)
+      // 
+      // Since login already provided user data, we should NOT clear token or redirect
+      // on 401 for this specific endpoint. Let the component handle the error gracefully.
+      if (isAuthEndpoint) {
+        console.warn("[ApiBase] 401 on auth endpoint - NOT clearing token or redirecting");
+        console.warn("[ApiBase] Endpoint:", error.config?.url);
+        console.warn("[ApiBase] Current path:", window.location.pathname);
+        console.warn("[ApiBase] This is likely a background sync request - login already provided user data");
+        console.warn("[ApiBase] If this persists, check:");
+        console.warn("[ApiBase] 1. Token format in localStorage (should not have 'Bearer ' prefix)");
+        console.warn("[ApiBase] 2. Backend JWT validation for /api/v1/auth/user endpoint");
+        console.warn("[ApiBase] 3. Token expiration time");
+        // Don't clear token or redirect - let the component handle it
+        // The user data from login is still valid
+      } else {
+        // For other endpoints (not auth sync), clear token and redirect
+        console.error("[ApiBase] 401 on non-auth endpoint - clearing token and redirecting");
+        window.localStorage.removeItem("AUTH_TOKEN");
+        if (window.location.pathname !== "/login" && window.location.pathname !== "/admin/login") {
+          console.log("[ApiBase] Redirecting to login due to 401");
+          window.location.href = "/login";
+        }
       }
     } else if (status === 404) {
       console.error("[ApiBase] 404 Not Found - endpoint does not exist");

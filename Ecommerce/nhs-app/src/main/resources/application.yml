@@ -18,4 +18,4 @@ nhs:
   token:
     accessTokenms: 3600000
     refreshTokenms: 7200000
-
+    secret: "MySuperSecretJWTKeyForHS256AlgorithmMustBeAtLeast32CharactersLong123456789012345678901234567890"
