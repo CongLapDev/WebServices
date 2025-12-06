@@ -37,6 +37,8 @@ public class RequestUtils {
     public Claims extractJwtClaimFromHeader(HttpServletRequest request) {
         try {
             if (jwtProvider == null) {
+                org.slf4j.LoggerFactory.getLogger(RequestUtils.class)
+                    .error("[RequestUtils] ❌ jwtProvider is NULL!");
                 return null;
             }
             String authHeader = request.getHeader("Authorization");
@@ -47,13 +49,20 @@ public class RequestUtils {
                     token = authHeader.substring(7);
                 }
                 if (!token.isEmpty()) {
-                    return jwtProvider.validate(token);
+                    org.slf4j.LoggerFactory.getLogger(RequestUtils.class)
+                        .debug("[RequestUtils] Attempting to validate token from Authorization header");
+                    Claims claims = jwtProvider.validate(token);
+                    if (claims == null) {
+                        org.slf4j.LoggerFactory.getLogger(RequestUtils.class)
+                            .warn("[RequestUtils] ⚠ Token validation returned NULL");
+                    }
+                    return claims;
                 }
             }
         } catch (Exception e) {
             // Log error for debugging
             org.slf4j.LoggerFactory.getLogger(RequestUtils.class)
-                .warn("Error extracting JWT from header: {}", e.getMessage());
+                .error("[RequestUtils] ❌ Error extracting JWT from header: {}", e.getMessage(), e);
         }
         return null;
     }

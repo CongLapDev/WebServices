@@ -126,13 +126,25 @@ function LoginForm({ className, success, isAdminLogin = false }) {
             console.log("[LOGIN] Step 3: Normalizing roles and updating Redux state...");
             
             // Normalize roles from login response
-            if (userData && userData.account && userData.account.roles) {
-                const normalizedRoleNames = userData.account.roles.map(r => {
-                    const roleName = r?.name || r;
-                    return (roleName || "").toUpperCase().replace(/^ROLE_/, "");
-                }).filter(Boolean);
-                userData.account.roles = normalizedRoleNames.map(name => ({ name }));
-                console.log("[LOGIN] ✓ Roles normalized:", normalizedRoleNames);
+            // CRITICAL: Ensure roles are always in format [{name: "ADMIN"}, {name: "USER"}]
+            if (userData && userData.account) {
+                if (userData.account.roles && Array.isArray(userData.account.roles)) {
+                    const normalizedRoleNames = userData.account.roles.map(r => {
+                        const roleName = r?.name || r;
+                        return (roleName || "").toUpperCase().replace(/^ROLE_/, "");
+                    }).filter(Boolean);
+                    userData.account.roles = normalizedRoleNames.map(name => ({ name }));
+                    console.log("[LOGIN] ✓ Roles normalized:", normalizedRoleNames);
+                    console.log("[LOGIN] Final roles structure:", userData.account.roles);
+                } else {
+                    console.warn("[LOGIN] ⚠ No roles in login response or roles is not an array");
+                    console.warn("[LOGIN] userData.account.roles:", userData.account.roles);
+                    // Ensure roles array exists even if empty
+                    userData.account.roles = [];
+                }
+            } else {
+                console.error("[LOGIN] ERROR: userData or userData.account is missing!");
+                console.error("[LOGIN] userData:", userData);
             }
             
             // ============================================
@@ -147,16 +159,23 @@ function LoginForm({ className, success, isAdminLogin = false }) {
             console.log("[LOGIN] User roles in Redux:", userData?.account?.roles?.map(r => r.name) || []);
             
             // ============================================
-            // STEP 3.6: Wait for Redux state propagation
+            // STEP 3.6: Wait for Redux state propagation and useAuth sync
             // ============================================
-            // Use requestAnimationFrame to ensure Redux dispatch has been processed
+            // Use multiple requestAnimationFrame calls to ensure:
+            // 1. Redux dispatch has been processed
+            // 2. useAuth's useEffect has detected the Redux change
+            // 3. useAuth's state has been updated to 1 (loaded)
             // This ensures state is available for navigation and role checks
-            console.log("[LOGIN] Waiting for Redux state propagation...");
+            console.log("[LOGIN] Waiting for Redux state propagation and useAuth sync...");
             await new Promise(resolve => {
+                // Triple RAF ensures Redux state + useAuth useEffect have both completed
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        console.log("[LOGIN] ✓ Redux state propagation complete");
-                        resolve();
+                        requestAnimationFrame(() => {
+                            console.log("[LOGIN] ✓ Redux state propagation and useAuth sync complete");
+                            console.log("[LOGIN] useAuth should now see user in Redux and state should be 1");
+                            resolve();
+                        });
                     });
                 });
             });

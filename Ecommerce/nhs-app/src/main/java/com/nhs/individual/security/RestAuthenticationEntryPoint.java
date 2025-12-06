@@ -16,8 +16,18 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest httpServletRequest,
                          HttpServletResponse httpServletResponse,
                          AuthenticationException e) throws IOException, ServletException {
-        httpServletResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
-                e.getLocalizedMessage());
+        // Return 401 Unauthorized for authentication failures (missing/invalid token)
+        // 403 Forbidden should be used for authorization failures (valid token but insufficient permissions)
+        httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        httpServletResponse.setContentType("application/json");
+        httpServletResponse.setCharacterEncoding("UTF-8");
+        String errorMessage = e != null && e.getMessage() != null 
+            ? e.getMessage() 
+            : "Unauthorized: Authentication required";
+        httpServletResponse.getWriter().write(
+            String.format("{\"error\":\"%s\",\"status\":401,\"message\":\"Authentication required\"}", 
+                errorMessage.replace("\"", "\\\""))
+        );
     }
 
 }

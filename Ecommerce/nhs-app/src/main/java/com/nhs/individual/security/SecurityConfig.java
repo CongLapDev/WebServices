@@ -1,8 +1,9 @@
 package com.nhs.individual.security;
 
 import com.nhs.individual.secure.IUserDetail;
+import com.nhs.individual.security.Filter.JwtFilter;
 import com.nhs.individual.service.AccountService;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,6 +20,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.cors.CorsConfiguration;
@@ -30,10 +32,13 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 @Configuration
-@AllArgsConstructor
 public class SecurityConfig {
 
-    private final AccountService service;
+    @Autowired
+    private AccountService service;
+    
+    @Autowired
+    private JwtFilter jwtFilter;
 
     @Bean
     public LogoutHandler logoutHandler() {
@@ -50,6 +55,9 @@ public class SecurityConfig {
         httpSecurity
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                // Add JWT filter BEFORE authentication checks
+                // This ensures JWT tokens are processed and SecurityContext is set before Spring Security checks authentication
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(req -> {
                     // Public endpoints - no authentication required
                     req.requestMatchers("/api/auth/login").permitAll()
@@ -70,7 +78,10 @@ public class SecurityConfig {
                             // All other requests require authentication
                             .anyRequest().authenticated();
                 })
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(new RestAuthenticationEntryPoint()))
+                .exceptionHandling(ex -> {
+                    ex.authenticationEntryPoint(new RestAuthenticationEntryPoint());
+                    ex.accessDeniedHandler(new RestAccessDeniedHandler());
+                })
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return httpSecurity.build();

@@ -34,3 +34,9 @@ payment:
   #   vnp_HashSecret: "hgkdgkd"
 server:
   port: 8085
+nhs:
+  token:
+    # JWT Secret Key - MUST be at least 32 characters (256 bits) for HS256
+    # This must match the secret used in application-common.yml
+    # IMPORTANT: Use a strong, random secret key in production
+    secret: "MySuperSecretJWTKeyForHS256AlgorithmMustBeAtLeast32CharactersLong123456789012345678901234567890"

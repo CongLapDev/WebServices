@@ -31,7 +31,7 @@ public class JwtFilter extends OncePerRequestFilter {
     
     // List of paths that should skip JWT processing (permitAll endpoints)
     private static final String[] PERMIT_ALL_PATHS = {
-        "/test/", "/login/", "/register", "/refresh", "/logout", 
+        "/test/", "/login", "/api/auth/login", "/register", "/refresh", "/logout", 
         "/swagger-ui/", "/v3/api-docs/"
     };
     
@@ -103,23 +103,33 @@ public class JwtFilter extends OncePerRequestFilter {
             
             // Try to extract JWT from cookie or Authorization header
             log.info("[JwtFilter] Attempting to extract JWT claim...");
-            Claims token = requestUtils.extractJwtClaim(request, AUTH_TOKEN);
+            Claims token = null;
+            try {
+                token = requestUtils.extractJwtClaim(request, AUTH_TOKEN);
+            } catch (Exception e) {
+                log.error("[JwtFilter] ❌ Exception during token extraction: {}", e.getMessage(), e);
+            }
             
             if (token == null) {
                 log.warn("[JwtFilter] ⚠ Token extraction returned NULL");
                 log.warn("[JwtFilter] Possible causes:");
                 log.warn("[JwtFilter] 1. No Authorization header or cookie");
                 log.warn("[JwtFilter] 2. Token format is invalid");
-                log.warn("[JwtFilter] 3. Token validation failed (expired, malformed, etc.)");
+                log.warn("[JwtFilter] 3. Token validation failed (expired, malformed, signature mismatch, etc.)");
                 log.warn("[JwtFilter] 4. JwtProvider.validate() returned null");
+                log.warn("[JwtFilter] 5. JwtProvider or RequestUtils is null");
+                // Don't clear SecurityContext here - let Spring Security handle it
             } else {
                 log.info("[JwtFilter] ✓ Token extracted successfully");
                 log.info("[JwtFilter] Token subject (username): {}", token.getSubject());
                 
-                if (token.getSubject() != null && !token.getSubject().isEmpty()) {
+                // Extract subject to final variable for use in lambda
+                final String tokenSubject = token.getSubject();
+                
+                if (tokenSubject != null && !tokenSubject.isEmpty()) {
                     try {
-                        log.info("[JwtFilter] Looking up user by username: {}", token.getSubject());
-                        service.findByUsername(token.getSubject())
+                        log.info("[JwtFilter] Looking up user by username: {}", tokenSubject);
+                        service.findByUsername(tokenSubject)
                                 .map(IUserDetail::new)
                                 .ifPresentOrElse(
                                     user -> {
@@ -127,6 +137,8 @@ public class JwtFilter extends OncePerRequestFilter {
                                         log.info("[JwtFilter] User ID: {}", user.getId());
                                         log.info("[JwtFilter] User authorities: {}", user.getAuthorities());
                                         
+                                        // Spring Security 6: Constructor with authorities automatically creates authenticated token
+                                        // DO NOT call setAuthenticated(true) - it will throw IllegalStateException
                                         UsernamePasswordAuthenticationToken authenticationToken = 
                                             new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                                         authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -137,11 +149,11 @@ public class JwtFilter extends OncePerRequestFilter {
                                                  SecurityContextHolder.getContext().getAuthentication().getPrincipal().getClass().getSimpleName());
                                     },
                                     () -> {
-                                        log.error("[JwtFilter] ❌ User not found in database: {}", token.getSubject());
+                                        log.error("[JwtFilter] ❌ User not found in database: {}", tokenSubject);
                                     }
                                 );
                     } catch (Exception e) {
-                        log.error("[JwtFilter] ❌ Could not set Authentication for user: {}", token.getSubject(), e);
+                        log.error("[JwtFilter] ❌ Could not set Authentication for user: {}", tokenSubject, e);
                         log.error("[JwtFilter] Exception details:", e);
                         // Clear any partial authentication
                         SecurityContextHolder.clearContext();

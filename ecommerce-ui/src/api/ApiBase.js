@@ -11,62 +11,105 @@ const APIBase = axios.create({
 });
 
 // Request interceptor: Attach Authorization header if token exists in localStorage
+// CRITICAL: This interceptor MUST run for ALL requests to ensure Authorization header is attached
 APIBase.interceptors.request.use(
   (config) => {
     try {
+      // CRITICAL: Ensure headers object exists
+      if (!config.headers) {
+        config.headers = {};
+      }
+      
+      // CRITICAL: Check for token in localStorage
       const token = window.localStorage.getItem("AUTH_TOKEN");
-      const url = config.url || config.baseURL + (config.url || "");
+      const fullUrl = config.url ? `${config.baseURL || ""}${config.url}` : (config.baseURL || "");
+      const isAuthEndpoint = fullUrl.includes("/auth/") || fullUrl.includes("/api/v1/");
       
       // Log token status for auth endpoints
-      if (url.includes("/auth/") || url.includes("/api/v1/")) {
-        console.log("[ApiBase] Request to:", url, "- Token available:", !!token);
+      if (isAuthEndpoint) {
+        console.log("[ApiBase] ===== REQUEST INTERCEPTOR =====");
+        console.log("[ApiBase] Request URL:", fullUrl);
+        console.log("[ApiBase] Token in localStorage:", token ? "EXISTS" : "MISSING");
         if (token) {
-          console.log("[ApiBase] Token length:", token.length, "- First 20 chars:", token.slice(0, 20) + "...");
+          console.log("[ApiBase] Token length:", token.length);
+          console.log("[ApiBase] Token (first 30 chars):", token.slice(0, 30) + "...");
         }
       }
       
-      if (token && token.trim() !== "") {
-        config.headers = config.headers || {};
-        // Only add Authorization header if not already present
-        if (!config.headers.Authorization) {
-          // Ensure token doesn't already have "Bearer " prefix
-          const cleanToken = token.startsWith("Bearer ") ? token.substring(7).trim() : token.trim();
+      // CRITICAL: Check if Authorization header already exists (case-insensitive check)
+      const hasAuthHeader = !!(
+        config.headers.Authorization || 
+        config.headers.authorization ||
+        config.headers.AUTHORIZATION
+      );
+      
+      if (hasAuthHeader && isAuthEndpoint) {
+        const existingHeader = config.headers.Authorization || config.headers.authorization || config.headers.AUTHORIZATION;
+        console.log("[ApiBase] Authorization header already present:", existingHeader.slice(0, 30) + "...");
+      }
+      
+      // CRITICAL: Add Authorization header if token exists and header not already present
+      if (token && token.trim() !== "" && !hasAuthHeader) {
+        // Ensure token doesn't already have "Bearer " prefix
+        const cleanToken = token.startsWith("Bearer ") ? token.substring(7).trim() : token.trim();
+        
+        if (cleanToken && cleanToken.length > 0) {
           const bearerToken = `Bearer ${cleanToken}`;
+          
+          // CRITICAL: Set header using proper case (axios will handle HTTP case-insensitivity)
           config.headers.Authorization = bearerToken;
           
-          // Log for auth endpoints
-          if (url.includes("/auth/") || url.includes("/api/v1/")) {
-            console.log("[ApiBase] ===== Adding Authorization Header =====");
-            console.log("[ApiBase] ✓ Authorization header added");
-            console.log("[ApiBase] Token source: localStorage");
-            console.log("[ApiBase] Token length:", cleanToken.length);
-            console.log("[ApiBase] Token (first 30 chars):", cleanToken.slice(0, 30) + "...");
-            console.log("[ApiBase] Full Authorization header (first 50 chars):", bearerToken.slice(0, 50) + "...");
-            console.log("[ApiBase] Request URL:", url);
+          // CRITICAL: Also set lowercase version to ensure compatibility
+          config.headers.authorization = bearerToken;
+          
+          if (isAuthEndpoint) {
+            console.log("[ApiBase] ===== AUTHORIZATION HEADER ADDED =====");
+            console.log("[ApiBase] ✓ Token extracted from localStorage");
+            console.log("[ApiBase] ✓ Clean token length:", cleanToken.length);
+            console.log("[ApiBase] ✓ Bearer token created");
+            console.log("[ApiBase] ✓ Authorization header set:", bearerToken.slice(0, 50) + "...");
+            console.log("[ApiBase] ✓ Config headers after setting:", {
+              Authorization: config.headers.Authorization ? "SET" : "MISSING",
+              authorization: config.headers.authorization ? "SET" : "MISSING"
+            });
             console.log("[ApiBase] ========================================");
           }
         } else {
-          if (url.includes("/auth/") || url.includes("/api/v1/")) {
-            console.log("[ApiBase] Authorization header already present");
-            console.log("[ApiBase] Existing header value:", config.headers.Authorization.slice(0, 30) + "...");
+          if (isAuthEndpoint) {
+            console.error("[ApiBase] ❌ Token is empty after cleaning!");
           }
         }
-      } else {
+      } else if (!token || token.trim() === "") {
         // No token - log for auth endpoints
-        if (url.includes("/auth/") || url.includes("/api/v1/")) {
-          console.warn("[ApiBase] ⚠ No token in localStorage for authenticated endpoint:", url);
-          console.warn("[ApiBase] This request will likely return 401 or 403");
+        if (isAuthEndpoint) {
+          console.error("[ApiBase] ❌❌❌ NO TOKEN IN LOCALSTORAGE!");
+          console.error("[ApiBase] Request URL:", fullUrl);
+          console.error("[ApiBase] This request will FAIL with 401/403");
+          console.error("[ApiBase] localStorage.getItem('AUTH_TOKEN'):", window.localStorage.getItem("AUTH_TOKEN"));
         }
       }
-      // If no token, request will proceed without Authorization header
-      // Public endpoints will work, authenticated endpoints will return 401/403
+      
+      // CRITICAL: Final verification - log headers for auth endpoints
+      if (isAuthEndpoint) {
+        const finalAuthHeader = config.headers.Authorization || config.headers.authorization || config.headers.AUTHORIZATION;
+        if (finalAuthHeader) {
+          console.log("[ApiBase] ✓✓✓ FINAL VERIFICATION: Authorization header will be sent");
+          console.log("[ApiBase] Header value (first 50 chars):", finalAuthHeader.slice(0, 50) + "...");
+        } else {
+          console.error("[ApiBase] ❌❌❌ FINAL VERIFICATION FAILED: No Authorization header!");
+          console.error("[ApiBase] Config headers:", Object.keys(config.headers));
+        }
+      }
+      
     } catch (error) {
-      console.error("[ApiBase] Error reading token from localStorage:", error);
+      console.error("[ApiBase] ❌ CRITICAL ERROR in request interceptor:", error);
+      console.error("[ApiBase] Error stack:", error.stack);
     }
+    
     return config;
   },
   (error) => {
-    console.error("[ApiBase] Request interceptor error:", error);
+    console.error("[ApiBase] Request interceptor error handler:", error);
     return Promise.reject(error);
   }
 );

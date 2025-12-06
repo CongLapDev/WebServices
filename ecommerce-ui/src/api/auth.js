@@ -17,42 +17,86 @@ const persistTokenFromResponse = (response) => {
     fullResponse: response
   });
   
-  // Backend sets token in cookies (httpOnly), but we need it in localStorage for Authorization header
-  // Backend also returns token in Authorization and X-Auth-Token headers (see AuthService.signInWithUserDetails)
+  // CRITICAL: Backend sets token in X-Auth-Token and Authorization headers (see AuthService.signInWithUserDetails)
+  // We MUST extract the token to store in localStorage for subsequent requests
   // Try multiple locations for the token in response (priority order matters)
-  const token =
-    response.headers?.["x-auth-token"] ||           // First: X-Auth-Token header (backend sets this)
-    response.headers?.["X-Auth-Token"] ||            // Case-insensitive check
-    response.headers?.authorization?.replace(/^Bearer\s+/i, "") ||  // Authorization header (remove Bearer prefix)
-    response.headers?.Authorization?.replace(/^Bearer\s+/i, "") ||  // Case-insensitive
-    response.data?.token ||
-    response.data?.accessToken ||
-    response.data?.access_token ||
-    response.data?.jwt ||
-    response.headers?.["set-cookie"]?.[0]?.split("=")[1]?.split(";")[0]; // Last resort: Try to extract from Set-Cookie header
+  
+  // First: Check X-Auth-Token header (backend explicitly sets this)
+  let token = response.headers?.["x-auth-token"] || 
+              response.headers?.["X-Auth-Token"] ||
+              response.headers?.["X-AUTH-TOKEN"];
+  
+  // Second: Check Authorization header (backend also sets this)
+  if (!token) {
+    const authHeader = response.headers?.authorization || 
+                       response.headers?.Authorization || 
+                       response.headers?.AUTHORIZATION;
+    if (authHeader) {
+      // Remove "Bearer " prefix if present
+      token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    }
+  }
+  
+  // Third: Check response body
+  if (!token) {
+    token = response.data?.token ||
+            response.data?.accessToken ||
+            response.data?.access_token ||
+            response.data?.jwt;
+  }
+  
+  // Last resort: Try to extract from Set-Cookie header (usually won't work for httpOnly cookies)
+  if (!token && response.headers?.["set-cookie"]) {
+    const cookies = Array.isArray(response.headers["set-cookie"]) 
+      ? response.headers["set-cookie"] 
+      : [response.headers["set-cookie"]];
+    for (const cookie of cookies) {
+      const match = cookie.match(/(?:^|;\s*)(?:accessToken|token|jwt)=([^;]+)/i);
+      if (match) {
+        token = match[1];
+        break;
+      }
+    }
+  }
   
   if (token) {
-    // Strip Bearer prefix if present (should already be removed, but double-check)
-    const normalized = token.startsWith("Bearer ")
-      ? token.substring(7).trim()
+    // CRITICAL: Strip Bearer prefix if present (should already be removed, but double-check)
+    let normalized = token.startsWith("Bearer ") 
+      ? token.substring(7).trim() 
       : token.trim();
     
+    // Additional cleanup: remove any whitespace
+    normalized = normalized.trim();
+    
     if (normalized && normalized.length > 0) {
+      // CRITICAL: Save to localStorage - this is what the interceptor reads
       window.localStorage.setItem("AUTH_TOKEN", normalized);
-      console.log("[TOKEN] ✓ Token extracted and saved to localStorage");
-      console.log("[TOKEN] Token source:", 
-        response.headers?.["x-auth-token"] ? "X-Auth-Token header" :
-        response.headers?.["X-Auth-Token"] ? "X-Auth-Token header (case)" :
-        response.headers?.authorization ? "Authorization header" :
-        response.headers?.Authorization ? "Authorization header (case)" :
-        response.data?.token ? "response.data.token" :
-        response.data?.accessToken ? "response.data.accessToken" :
-        "unknown");
-      console.log("[TOKEN] Token length:", normalized.length);
-      console.log("[TOKEN] Token (first 30 chars):", normalized.slice(0, 30) + "...");
-      return true; // Indicate success
+      
+      // Verify it was saved
+      const saved = window.localStorage.getItem("AUTH_TOKEN");
+      if (saved === normalized) {
+        console.log("[TOKEN] ✓✓✓ Token extracted and saved to localStorage");
+        console.log("[TOKEN] Token source:", 
+          response.headers?.["x-auth-token"] || response.headers?.["X-Auth-Token"] ? "X-Auth-Token header" :
+          response.headers?.authorization || response.headers?.Authorization ? "Authorization header" :
+          response.data?.token ? "response.data.token" :
+          response.data?.accessToken ? "response.data.accessToken" :
+          response.data?.jwt ? "response.data.jwt" :
+          "unknown");
+        console.log("[TOKEN] Token length:", normalized.length);
+        console.log("[TOKEN] Token (first 30 chars):", normalized.slice(0, 30) + "...");
+        console.log("[TOKEN] ✓ Verification: Token in localStorage matches saved token");
+        return true; // Indicate success
+      } else {
+        console.error("[TOKEN] ❌ ERROR: Token saved but verification failed!");
+        console.error("[TOKEN] Expected:", normalized.slice(0, 30) + "...");
+        console.error("[TOKEN] Got:", saved ? saved.slice(0, 30) + "..." : "null");
+        return false;
+      }
     } else {
-      console.warn("[TOKEN DEBUG] Token found but is empty after normalization");
+      console.error("[TOKEN] ❌ Token found but is empty after normalization");
+      console.error("[TOKEN] Original token:", token ? token.slice(0, 50) + "..." : "null");
+      return false;
     }
   } else {
     // Backend uses cookies, so token might not be in response body/headers
