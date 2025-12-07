@@ -17,6 +17,7 @@ import java.util.Collection;
 @Entity
 @Table(name = "user")
 @ToString
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,7 +53,7 @@ public class User {
     @ToString.Exclude
     protected Collection<UserAddress> userAddresses;
     @OneToOne(mappedBy = "user",fetch = FetchType.EAGER,cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("user")
+    @JsonIgnoreProperties({"user","hibernateLazyInitializer","handler"})
     @ToString.Exclude
     protected Account account;
 

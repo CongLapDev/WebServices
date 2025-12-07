@@ -75,8 +75,11 @@ public class SecurityConfig {
                             .requestMatchers(HttpMethod.GET, "/api/v2/product/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/category/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/comment/**").permitAll()
-                            // Stats endpoints explicitly require authentication (clarity)
+                            // Stats and order endpoints explicitly require authentication (clarity)
                             .requestMatchers("/api/v1/statistic/**").authenticated()
+                            .requestMatchers("/api/v1/order/**").authenticated()
+                            .requestMatchers("/api/v1/order-management/**").authenticated()
+                            .requestMatchers("/api/v1/orders/**").authenticated()
                             // All other requests require authentication
                             .anyRequest().authenticated();
                 })

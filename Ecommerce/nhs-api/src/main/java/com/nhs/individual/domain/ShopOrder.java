@@ -16,6 +16,7 @@ import java.util.List;
 @Setter
 @Entity
 @Table(name = "shop_order")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ShopOrder implements Serializable {
     @Id
     @Column(name = "id", nullable = false)
@@ -24,7 +25,7 @@ public class ShopOrder implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY,cascade = CascadeType.MERGE)
     @JoinColumn(name = "user_id")
-    @JsonIgnoreProperties({"account","userAddresses"})
+    @JsonIgnoreProperties({"account","userAddresses","hibernateLazyInitializer","handler"})
     private User user;
 
     @Column(name = "user_id",insertable = false,updatable = false)
@@ -32,6 +33,7 @@ public class ShopOrder implements Serializable {
     private Integer userId;
     @ManyToOne(fetch = FetchType.EAGER,cascade = CascadeType.MERGE)
     @JoinColumn(name = "address_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
     private Address address;
 
 
@@ -44,6 +46,7 @@ public class ShopOrder implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shipping_method")
+    @JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
     private ShippingMethod shippingMethod;
 
     @Lob
@@ -51,7 +54,7 @@ public class ShopOrder implements Serializable {
     private String note;
 
     @OneToMany(mappedBy = "order",fetch = FetchType.EAGER,cascade = CascadeType.ALL)
-    @JsonIgnoreProperties("order")
+    @JsonIgnoreProperties({"order","hibernateLazyInitializer","handler"})
     private List<ShopOrderStatus> status;
 
     @OneToMany(mappedBy = "order",fetch = FetchType.EAGER,cascade = CascadeType.ALL)

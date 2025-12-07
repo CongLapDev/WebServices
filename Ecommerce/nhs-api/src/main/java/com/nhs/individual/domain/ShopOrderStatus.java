@@ -1,5 +1,6 @@
 package com.nhs.individual.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -9,6 +10,7 @@ import java.sql.Date;
 @Entity
 @Table(name = "shop_order_status")
 @Data
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ShopOrderStatus {
 
     @Id

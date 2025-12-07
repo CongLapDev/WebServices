@@ -109,6 +109,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     .map(IUserDetail::new)
                     .ifPresentOrElse(user -> {
                         log.info("[JwtFilter] ✓ User found: {}", user.getUsername());
+                        log.info("[JwtFilter] 🟢 User: {}, Roles/Authorities: {}", user.getUsername(), user.getAuthorities());
                         UsernamePasswordAuthenticationToken authentication =
                                 new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

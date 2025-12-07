@@ -1,6 +1,7 @@
 package com.nhs.individual.domain;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "order_line")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class OrderLine {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

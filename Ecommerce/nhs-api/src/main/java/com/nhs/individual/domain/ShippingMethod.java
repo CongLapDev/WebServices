@@ -1,5 +1,6 @@
 package com.nhs.individual.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "shipping_method")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class ShippingMethod {
     @Id
     @Column(name = "id", nullable = false)

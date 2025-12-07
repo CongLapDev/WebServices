@@ -12,6 +12,9 @@ spring:
     hibernate:
       ddl-auto: update
     generate-ddl: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
 server:
   port: 8085
 nhs:
