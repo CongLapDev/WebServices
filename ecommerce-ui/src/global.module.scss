@@ -1,21 +1,29 @@
-$mobile-width: 480px; 
-$tablet-width: 768px; 
-$desktop-width: 1024px;  
+$mobile-width: 480px;
+$tablet-width: 768px;
+$desktop-width: 1024px;
 $border-radius: 0.95rem;
-.d-block{
-  display: block;
+.d-block {
+    display: block;
 }
-@mixin mobile { @media (max-width: #{ $mobile-width - 1px}) {     
-  @content;   
- } 
-}  
+@mixin mobile {
+    @media (max-width: #{ $mobile-width - 1px}) {
+        @content;
+    }
+}
 
-@mixin tablet { @media (min-width: #{ $tablet-width}) and (max-width: #{ $desktop-width - 1px}) {       
-   @content;   
- } 
-}  
+@mixin tablet {
+    @media (min-width: #{ $tablet-width}) and (max-width: #{ $desktop-width - 1px}) {
+        @content;
+    }
+}
 
-@mixin desktop {   @media (min-width: #{ $desktop-width}) {     
-  @content;  
- } 
+@mixin desktop {
+    @media (min-width: #{ $desktop-width}) {
+        @content;
+    }
+}
+
+.loginBtn {
+    display: flex;
+    justify-content: flex-end;
 }

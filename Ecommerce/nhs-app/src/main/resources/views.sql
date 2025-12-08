@@ -19,6 +19,7 @@ from product
                             on total.product_item_id = product_item.id
               group by product_item.product_id) as product_total
              on product.id = product_total.product_id;
+--             View này tạo bảng ảo để lấy các sản phẩm được đặt hàng nhiều nhất.
 
 create or replace view prospectiveUser as
 select *
@@ -28,3 +29,5 @@ from user
               group by user_id
               order by total_amount desc) user_order_total
              on user.id = user_order_total.user_id;
+
+--           View này dùng để xác định khách hàng tiềm năng dựa trên tổng tiền đã mua và số đơn hàng.

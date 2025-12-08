@@ -1,5 +1,12 @@
 use WebServices;
-insert into role(name) values ("USER"),("ADMIN"),("SUPER_ADMIN");
+-- Ensure roles are inserted with non-null names
+-- If roles already exist, update them to ensure names are set
+INSERT INTO role(id, name) VALUES (1, "USER"), (2, "ADMIN"), (3, "SUPER_ADMIN")
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+-- Fix any NULL role names
+UPDATE role SET name = 'USER' WHERE id = 1 AND (name IS NULL OR TRIM(name) = '');
+UPDATE role SET name = 'ADMIN' WHERE id = 2 AND (name IS NULL OR TRIM(name) = '');
+UPDATE role SET name = 'SUPER_ADMIN' WHERE id = 3 AND (name IS NULL OR TRIM(name) = '');
 insert into shipping_method(name,price) values("STANDARD",50000),("FAST",10000),("EXPRESS",20000);
 insert into country(name) values("Viet Name"),("USA"),("China");
 insert into payment_method(id, name, provider) values(1,"COD","NONE");

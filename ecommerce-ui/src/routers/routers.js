@@ -24,11 +24,13 @@ import UserResultPage from "../page/user/result/UserResultPage.js";
 import UserOrderCheckOutPage from "../page/user/user-order-checkout-page/UserOrderCheckoutPage.js";
 import ZaloPayProcess from "../page/user/zalopay-result-page/index.js";
 import ForgotPasswordPage from "../page/user/forgot-password/ForgotPasswordPage.js";
+import AuthSuccessPage from "../page/auth/AuthSuccessPage.js";
 
 export const publicRouter = [
     { path: "/login", component: LoginPage },
     { path: "/register", component: Register },
     { path: "/forgot-password", component: ForgotPasswordPage },
+    { path: "/auth/success", component: AuthSuccessPage },
     { path: "/product", component: ProductPage, layout: HeadOnly },
     { path: "/", component: Home, layout: HeadOnly },
     { path: "/product/search", component: SearchProductPage, layout: HeadOnly },

@@ -17,8 +17,10 @@ public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @Column(name = "name", length = 45)
+    
+    @Column(name = "name", length = 45, nullable = false)
     private String name;
+    
     @ManyToMany(fetch = FetchType.LAZY,cascade = CascadeType.DETACH,mappedBy = "roles")
     @JsonIgnoreProperties("roles")
     @ToString.Exclude

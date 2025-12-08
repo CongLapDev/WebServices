@@ -2,10 +2,13 @@ package com.nhs.individual.security;
 
 import com.nhs.individual.secure.IUserDetail;
 import com.nhs.individual.security.Filter.JwtFilter;
+import com.nhs.individual.security.Oauth2.Oauth2Service;
+import com.nhs.individual.security.Oauth2.Oauth2SuccessHandler;
 import com.nhs.individual.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -39,6 +42,14 @@ public class SecurityConfig {
     
     @Autowired
     private JwtFilter jwtFilter;
+    
+    @Autowired
+    @Lazy
+    private Oauth2Service oauth2Service;
+    
+    @Autowired
+    @Lazy
+    private Oauth2SuccessHandler oauth2SuccessHandler;
 
     @Bean
     public LogoutHandler logoutHandler() {
@@ -60,16 +71,25 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(req -> {
                     // Public endpoints - no authentication required
-                    req.requestMatchers("/api/auth/login").permitAll()
-                            .requestMatchers("/login").permitAll()
+                    // OAuth2 endpoints (must be public for redirect flow)
+                    req.requestMatchers("/oauth2/**").permitAll()
+                            // Login endpoints
+                            .requestMatchers("/login/**").permitAll()
+                            .requestMatchers("/api/auth/login").permitAll()
+                            // Auth endpoints
+                            .requestMatchers("/auth/**").permitAll()
+                            // Error endpoints
+                            .requestMatchers("/error").permitAll()
+                            .requestMatchers("/error/**").permitAll()
+                            // Other public endpoints
                             .requestMatchers("/register").permitAll()
                             .requestMatchers("/refresh").permitAll()
+                            // Logout endpoints (both old and new)
                             .requestMatchers("/logout").permitAll()
+                            .requestMatchers("/api/v1/auth/logout").permitAll()
                             .requestMatchers("/test/**").permitAll()
                             .requestMatchers("/swagger-ui/**").permitAll()
                             .requestMatchers("/v3/api-docs/**").permitAll()
-                            .requestMatchers("/auth/**").permitAll()
-                            .requestMatchers("/oauth2/**").permitAll()
                             // Public GET endpoints for products and categories
                             .requestMatchers(HttpMethod.GET, "/api/v1/product/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v2/product/**").permitAll()
@@ -87,6 +107,19 @@ public class SecurityConfig {
                     ex.authenticationEntryPoint(new RestAuthenticationEntryPoint());
                     ex.accessDeniedHandler(new RestAccessDeniedHandler());
                 })
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .addLogoutHandler(logoutHandler())
+                        .logoutSuccessHandler(logoutSuccessHandler())
+                        .permitAll()
+                        .clearAuthentication(true)
+                        .invalidateHttpSession(false) // STATELESS - no session to invalidate
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2/authorization/google")
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oauth2Service))
+                        .successHandler(oauth2SuccessHandler))
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return httpSecurity.build();
@@ -120,6 +153,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Explicitly allow localhost origins for development
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://localhost:8085");
+        // Also allow all origins for flexibility (can be restricted in production)
         configuration.addAllowedOriginPattern("*");
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));

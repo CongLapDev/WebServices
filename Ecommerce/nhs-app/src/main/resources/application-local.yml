@@ -12,6 +12,7 @@ spring:
                 client-id: ${GOOGLE_CLIENT_ID}
                 client-secret: ${GOOGLE_CLIENT_SECRET}
                 authorization-grant-type: authorization_code
+                redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
                 scope:
                   - email
                   - profile
@@ -34,6 +35,9 @@ payment:
   #   vnp_HashSecret: "hgkdgkd"
 server:
   port: 8085
+# Frontend URL for OAuth redirect (localhost for development)
+frontend:
+  url: http://localhost:3000
 nhs:
   token:
     # JWT Secret Key - MUST be at least 32 characters (256 bits) for HS256

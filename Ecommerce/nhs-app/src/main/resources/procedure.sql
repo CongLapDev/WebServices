@@ -5,7 +5,7 @@ CREATE TRIGGER setupNewUser
     begin
         insert into user_payment(payment_type_id,user_id) value (1,NEW.id);
     end //
-
+--Trigger này chạy tự động sau khi tạo user mới.
 
 DELIMITER //
 CREATE PROCEDURE setDefaultUserAddress(
@@ -27,3 +27,4 @@ begin
     end if;
 end //
 
+--Procedure này dùng để set một địa chỉ của user thành địa chỉ mặc định, đồng thời đảm bảo transaction đúng.

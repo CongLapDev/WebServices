@@ -34,7 +34,7 @@ public class JwtFilter extends OncePerRequestFilter {
     // List of paths that should skip JWT processing (permitAll endpoints)
     private static final String[] PERMIT_ALL_PATHS = {
             "/test/", "/login", "/api/auth/login", "/register", "/refresh", "/logout",
-            "/swagger-ui/", "/v3/api-docs/"
+            "/api/v1/auth/logout", "/swagger-ui/", "/v3/api-docs/", "/oauth2/", "/auth/", "/error"
     };
 
     private boolean shouldSkipJwtProcessing(String requestPath) {
