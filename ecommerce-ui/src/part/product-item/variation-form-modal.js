@@ -162,7 +162,6 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
 
 export default VariationForm;
 
-
 {/* <FormikProvider value={formik}>
 <form onSubmit={formik.handleSubmit}>
     <Row gutter={18}>

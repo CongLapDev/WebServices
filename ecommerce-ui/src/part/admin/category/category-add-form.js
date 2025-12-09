@@ -2,8 +2,9 @@ import { Form, useFormik } from "formik";
 import { Button, Input, Row, Col } from "antd";
 import { Error } from "../../../components";
 import * as Yup from 'yup';
-function CategoryForm({ parent, submitHandler }) {
-    var initialValues = {
+import { useEffect } from "react";
+function CategoryForm({ parent, submitHandler, initialValues: propInitialValues }) {
+    var initialValues = propInitialValues || {
         "name": "",
         "description": ""
     }
@@ -13,15 +14,22 @@ function CategoryForm({ parent, submitHandler }) {
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: validationSchema,
-
+        enableReinitialize: true,
         onSubmit: submitHandler
     })
+    
+    useEffect(() => {
+        if (propInitialValues) {
+            formik.setValues(propInitialValues);
+        }
+    }, [propInitialValues])
     return (
         <form onSubmit={formik.handleSubmit}>
             <Row gutter={[16, 16]} align="bottom">
                 <Col span={24}>
                     <label>Category's name</label>
                     <Input name="name"
+                        value={formik.values.name}
                         status={formik.errors.name && "error"}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
@@ -31,6 +39,7 @@ function CategoryForm({ parent, submitHandler }) {
                 <Col span={20}>
                     <label>Description</label>
                     <Input.TextArea name="description"
+                        value={formik.values.description}
                         status={formik.errors.description && "error"}
                         onChange={formik.handleChange}
                         onBlur={formik.handleBlur}
