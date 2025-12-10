@@ -6,6 +6,7 @@ import { useContext, useState, useEffect } from "react";
 import { GlobalContext } from "../../../context";
 import OrderList from "../../../part/admin/order-list/OrderList";
 import AccountStatusTag from "../../../part/account-status-tag/AccountStatusTag";
+import { formatDate } from "../../../utils/dateFormatter";
 function AdminUserDetailPage() {
     const [params, setParams] = useSearchParams();
     const [data, setData] = useState();
@@ -91,7 +92,7 @@ function AdminUserDetailPage() {
                             {data.gender}
                         </LinkListItem>
                         <LinkListItem title="Birthday" prefix={<PrefixIcon><i className="fi fi-rr-cake-birthday"></i></PrefixIcon>}>
-                            {data.dateOfBirth}
+                            {formatDate(data.dateOfBirth)}
                         </LinkListItem>
                         <Row style={{ paddingTop: "16px" }} gutter={[16, 16]}>
                             {data.account.status != 2 && <Col span={12}><Button onClick={() => changeStatus("INACTIVE")} type="primary" danger block>Inactive</Button></Col>}

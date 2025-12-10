@@ -4,6 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import APIBase from "../../../api/ApiBase";
 import { Link } from "react-router-dom";
 import AccountStatusTag from "../../../part/account-status-tag/AccountStatusTag";
+import { formatDate } from "../../../utils/dateFormatter";
 function AdminUserManagePage() {
     const [api, setApi] = useState("api/v1/product")
     const [page, setPage] = useState({ page: 0, size: 10 })
@@ -71,7 +72,7 @@ function AdminUserManagePage() {
                             lastname: user_.lastname,
                             email: user_.email,
                             phone: user_.phoneNumber,
-                            dob: user_.dateOfBirth,
+                            dob: formatDate(user_.dateOfBirth),
                             gender: user_.gender,
                             status: <AccountStatusTag status={user_.account?.status} />,
                             action: <Link to={`/admin/user?id=${user_.id}`}>Detail</Link>

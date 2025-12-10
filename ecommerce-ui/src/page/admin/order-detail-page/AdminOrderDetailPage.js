@@ -5,6 +5,7 @@ import APIBase from "../../../api/ApiBase";
 import { GlobalContext } from "../../../context";
 import { Currency, Description } from "../../../components";
 import OrderStatusTag from "../../../part/admin/order-status-tag/OrderStatusTag";
+import { formatDateTime } from "../../../utils/dateFormatter";
 
 function AdminOrderDetailPage() {
     const [params, setRequestParams] = useSearchParams();
@@ -90,7 +91,7 @@ function AdminOrderDetailPage() {
                     <Row gutter={[16, 16]}>
                         <Col span={24}>
                             <Row gutter={[16, 16]} align="stretch">
-                                <Col span={12}><Card style={{ height: "100%" }}><Statistic title="Date" value={(new Date(data.orderDate).toString())} /></Card></Col>
+                                <Col span={12}><Card style={{ height: "100%" }}><Statistic title="Date" value={formatDateTime(data.orderDate)} /></Card></Col>
                                 <Col span={6}><Card style={{ height: "100%" }}><Statistic title="Total" value={data.total} /></Card></Col>
                                 <Col span={6}><Card style={{ height: "100%" }}><Statistic title="Ship Method" value={data.shippingMethod?.name} suffix={data.shippingMethod?.price} /></Card></Col>
                             </Row>
@@ -152,7 +153,7 @@ function AdminOrderDetailPage() {
                                                         <OrderStatusTag status={item.status} />
                                                         <h4>{item.note}</h4>
                                                         <h5>{item.detail}</h5>
-                                                        <Description>{item.updateAt}</Description>
+                                                        <Description>{formatDateTime(item.updateAt)}</Description>
                                                     </Col>
                                                 })).reverse()} />
                                             </Card>

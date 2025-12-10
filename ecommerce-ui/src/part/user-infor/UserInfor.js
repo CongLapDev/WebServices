@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Col, Row, Card, List } from "antd";
 import style from './style.module.scss';
 import PrefixIcon from '../../components/prefix-icon/PrefixIcon';
+import { formatDate } from '../../utils/dateFormatter';
 function UserInfor({ user }) {
     return (<Card >
         <Col>
@@ -22,7 +23,7 @@ function UserInfor({ user }) {
                 {user.gender}
             </LinkListItem>
             <LinkListItem title="Birthday" prefix={<PrefixIcon><i className="fi fi-rr-cake-birthday"></i></PrefixIcon>}>
-                {user.dateOfBirth}
+                {formatDate(user.dateOfBirth)}
             </LinkListItem>
             <LinkListItem title="Address" to={`/user/address`} prefix={<PrefixIcon><i className="fi fi-rr-building"></i></PrefixIcon>} arrow />
             <LinkListItem title="Payment" prefix={<PrefixIcon><i className="fi fi-sr-credit-card"></i></PrefixIcon>} arrow />
