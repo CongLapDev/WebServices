@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import useAuth from "./useAuth";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 
 /**
  * RoleBaseAuthorize - Route guard component that checks user roles before rendering
@@ -33,48 +33,41 @@ function RoleBaseAuthorize({ path, role, onFail, onSuccess, fail, children }) {
     const [state, user, hasRole, requestAuth] = useAuth();
     const redirectExecutedRef = useRef(false); // Prevent multiple redirects
     
-    // DEBUG: Log component render with current state
+    // CRITICAL: Memoize authorization check to prevent calling hasRole during render when loading
+    // Only compute when state is loaded (state === 1)
+    const isValid = useMemo(() => {
+        // Don't check if still loading
+        if (state !== 1) {
+            return null;
+        }
+        return hasRole(role);
+    }, [state, hasRole, role]);
+    
+    // DEBUG: Log component render with current state (only when loaded)
     useEffect(() => {
-        console.log("[RoleBaseAuthorize] Component rendered", {
-            path: path || "unknown",
-            state: state,
-            hasUser: !!user,
-            userRoles: user?.account?.roles?.map(r => r.name) || [],
-            requiredRole: role,
-            hasRoleResult: hasRole(role)
-        });
-    }, [state, user, hasRole, role, path]);
+        if (state === 1) {
+            console.log("[RoleBaseAuthorize] Component rendered", {
+                path: path || "unknown",
+                state: state,
+                hasUser: !!user,
+                userRoles: user?.account?.roles?.map(r => r.name) || [],
+                requiredRole: role,
+                isValid: isValid
+            });
+        }
+    }, [state, user, role, path, isValid]);
     
     /**
      * Handle redirect when user is not authorized
      * CRITICAL: Only redirect when:
      * 1. state === 1 (loaded)
-     * 2. hasRole(role) === false (explicitly false, not null)
+     * 2. isValid === false (explicitly false, not null)
      * 3. Not already on login page
      * 4. Redirect not already executed
      */
     useEffect(() => {
         // CRITICAL: Don't do anything if still loading
-        if (state !== 1) {
-            console.log("[RoleBaseAuthorize] Still loading (state:", state, "), not checking authorization");
-            return;
-        }
-        
-        // Check authorization
-        const isValid = hasRole(role);
-        
-        console.log("[RoleBaseAuthorize] Authorization check", {
-            path: path || "unknown",
-            state: state,
-            hasUser: !!user,
-            isValid: isValid,
-            requiredRole: role,
-            userRoles: user?.account?.roles?.map(r => r.name) || []
-        });
-        
-        // CRITICAL: If isValid === null, we're still loading - DO NOT REDIRECT
-        if (isValid === null) {
-            console.log("[RoleBaseAuthorize] Authorization still loading (isValid === null), not redirecting");
+        if (state !== 1 || isValid === null) {
             return;
         }
         
@@ -82,7 +75,6 @@ function RoleBaseAuthorize({ path, role, onFail, onSuccess, fail, children }) {
         if (isValid === false) {
             // Prevent multiple redirects
             if (redirectExecutedRef.current) {
-                console.log("[RoleBaseAuthorize] Redirect already executed, skipping");
                 return;
             }
             
@@ -90,7 +82,6 @@ function RoleBaseAuthorize({ path, role, onFail, onSuccess, fail, children }) {
             
             // Don't redirect if already on login page
             if (currentPath === "/login" || currentPath === "/admin/login") {
-                console.log("[RoleBaseAuthorize] Already on login page, not redirecting");
                 return;
             }
             
@@ -105,33 +96,15 @@ function RoleBaseAuthorize({ path, role, onFail, onSuccess, fail, children }) {
             // User is authorized - reset redirect flag
             redirectExecutedRef.current = false;
         }
-    }, [state, user, hasRole, role, navigate, onFail, path]);
+    }, [state, isValid, navigate, onFail]);
     
     // Still loading - don't render anything yet (prevents flash of unauthorized content)
-    if (state !== 1) {
-        console.log("[RoleBaseAuthorize] Still loading, returning null");
-        return null;
-    }
-    
-    // Check if user has required role
-    const isValid = hasRole(role);
-    
-    console.log("[RoleBaseAuthorize] Render decision", {
-        path: path || "unknown",
-        isValid: isValid,
-        hasUser: !!user,
-        userRoles: user?.account?.roles?.map(r => r.name) || []
-    });
-    
-    // CRITICAL: If still loading (isValid === null), return null
-    if (isValid === null) {
-        console.log("[RoleBaseAuthorize] Authorization still loading, returning null");
+    if (state !== 1 || isValid === null) {
         return null;
     }
     
     // User has required role - allow access
     if (isValid === true) {
-        console.log("[RoleBaseAuthorize] User authorized, rendering children");
         if (onSuccess) return onSuccess();
         return <>{children}</>;
     }
@@ -141,7 +114,6 @@ function RoleBaseAuthorize({ path, role, onFail, onSuccess, fail, children }) {
     if (onFail) return onFail();
     
     // Return null while redirect is happening
-    console.log("[RoleBaseAuthorize] User not authorized, returning null (redirect in progress)");
     return null;
 }
 

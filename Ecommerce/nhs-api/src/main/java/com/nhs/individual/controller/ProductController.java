@@ -1,9 +1,13 @@
 package com.nhs.individual.controller;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nhs.individual.domain.Category;
 import com.nhs.individual.domain.Product;
 import com.nhs.individual.domain.ProductItem;
 import com.nhs.individual.exception.ResourceNotFoundException;
-import com.nhs.individual.service.CloudinaryService;
+import com.nhs.individual.service.CategoryService;
+import com.nhs.individual.service.LocalFileStorageService;
 import com.nhs.individual.service.ProductItemService;
 import com.nhs.individual.service.ProductService;
 import com.nhs.individual.specification.DynamicSearch;
@@ -13,6 +17,7 @@ import com.nhs.individual.workbook.ProductXLSX;
 import jakarta.annotation.security.PermitAll;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.data.domain.Page;
@@ -20,7 +25,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +37,7 @@ import java.math.BigDecimal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/product")
@@ -37,7 +45,8 @@ import java.util.*;
 public class ProductController {
     private ProductService productService;
     private ProductItemService productItemService;
-    CloudinaryService cloudinaryService;
+    private CategoryService categoryService;
+    private LocalFileStorageService localFileStorageService;
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET)
     public Product getProductById(@PathVariable(name = "id") Integer id) {
@@ -122,15 +131,142 @@ public class ProductController {
         return productService.custom(list, pageable);
     }
 
-    @RequestMapping(method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('ADMIN')")
-    public Product createProduct(
+    public ResponseEntity<Product> createProduct(
+            @RequestPart("product") String productJson,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            Product product) {
-        if (image != null) {
-            product.setPicture((String) cloudinaryService.upload(image).get("url"));
+            HttpServletRequest request) {
+        System.out.println("=== CREATE PRODUCT DEBUG START ===");
+        
+        try {
+            // Log multipart request keys
+            if (request instanceof StandardMultipartHttpServletRequest multipartRequest) {
+                System.out.println("Multipart keys: " + multipartRequest.getMultiFileMap().keySet());
+                System.out.println("All multipart parameter names: " + multipartRequest.getParameterMap().keySet());
+            } else {
+                System.out.println("Request is not StandardMultipartHttpServletRequest, type: " + request.getClass().getName());
+            }
+            
+            // Log productJson raw
+            System.out.println("Raw productJson received: " + productJson);
+            System.out.println("productJson length: " + (productJson != null ? productJson.length() : 0));
+            
+            // Log image file information
+            if (image == null) {
+                System.out.println("No image received from FE!");
+            } else {
+                System.out.println("Image file received:");
+                System.out.println("  - Is empty: " + image.isEmpty());
+                System.out.println("  - File size: " + image.getSize() + " bytes");
+                System.out.println("  - Content type: " + image.getContentType());
+                System.out.println("  - Original filename: " + image.getOriginalFilename());
+                System.out.println("  - Name: " + image.getName());
+            }
+            
+            // Check if multipart contains "image" key
+            if (request instanceof StandardMultipartHttpServletRequest multipartRequest) {
+                if (!multipartRequest.getMultiFileMap().containsKey("image")) {
+                    System.out.println("Multipart request does NOT contain key 'image'");
+                } else {
+                    System.out.println("Multipart request contains key 'image'");
+                }
+            }
+            
+            // Configure ObjectMapper for flexible deserialization
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            mapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+            
+            // Parse JSON string to Product object
+            System.out.println("Parsing productJson to Product object...");
+            Product product = mapper.readValue(productJson, Product.class);
+            System.out.println("Product parsed successfully:");
+            System.out.println("  - ID: " + product.getId());
+            System.out.println("  - Name: " + product.getName());
+            System.out.println("  - Category ID: " + (product.getCategory() != null ? product.getCategory().getId() : "null"));
+            System.out.println("  - Picture before upload: " + product.getPicture());
+            
+            // IMPORTANT: Clear picture from JSON (if any) - we'll set it from local file storage
+            product.setPicture(null);
+            System.out.println("Cleared picture from JSON (set to null)");
+            
+            // Validate and load category from database
+            if (product.getCategory() == null || product.getCategory().getId() == null) {
+                throw new IllegalArgumentException("Category id missing from JSON");
+            }
+            
+            System.out.println("Loading category from database, categoryId: " + product.getCategory().getId());
+            Category category = categoryService.findById(product.getCategory().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + product.getCategory().getId()));
+            product.setCategory(category);
+            System.out.println("Category loaded: " + category.getName());
+            
+            // Upload image to local file storage if present and set picture URL
+            if (image != null && !image.isEmpty()) {
+                System.out.println("Starting local file upload...");
+                System.out.println("  - File size: " + image.getSize() + " bytes");
+                System.out.println("  - Content type: " + image.getContentType());
+                System.out.println("  - Original filename: " + image.getOriginalFilename());
+                
+                String imageUrl = localFileStorageService.saveFile(image);
+                
+                System.out.println("Local file upload completed!");
+                System.out.println("Image URL: " + imageUrl);
+                
+                if (imageUrl == null) {
+                    System.err.println("ERROR: Failed to save image to local storage");
+                    throw new RuntimeException("Failed to save image to local storage");
+                }
+                
+                // Set picture URL BEFORE saving
+                product.setPicture(imageUrl);
+                System.out.println("Image uploaded successfully, URL set: " + imageUrl);
+            } else {
+                System.out.println("No image to upload, picture will remain null");
+            }
+            
+            // Log product state before saving
+            System.out.println("Product state BEFORE saving to DB:");
+            System.out.println("  - Name: " + product.getName());
+            System.out.println("  - Description: " + (product.getDescription() != null ? product.getDescription().substring(0, Math.min(50, product.getDescription().length())) + "..." : "null"));
+            System.out.println("  - Manufacturer: " + product.getManufacturer());
+            System.out.println("  - Category ID: " + (product.getCategory() != null ? product.getCategory().getId() : "null"));
+            System.out.println("  - Picture URL: " + product.getPicture());
+            
+            // Save product - picture is already set on product object
+            System.out.println("Saving product to database...");
+            Product savedProduct = productService.create(product);
+            System.out.println("Product saved successfully!");
+            
+            // Log product state after saving
+            System.out.println("Product state AFTER saving to DB:");
+            System.out.println("  - ID: " + savedProduct.getId());
+            System.out.println("  - Name: " + savedProduct.getName());
+            System.out.println("  - Picture URL: " + savedProduct.getPicture());
+            System.out.println("  - Category ID: " + (savedProduct.getCategory() != null ? savedProduct.getCategory().getId() : "null"));
+            
+            // Verify picture was saved correctly
+            if (image != null && !image.isEmpty() && savedProduct.getPicture() == null) {
+                System.err.println("ERROR: Picture was lost after save! Expected: " + product.getPicture());
+                throw new RuntimeException("Picture URL was not saved to database");
+            }
+            
+            System.out.println("=== CREATE PRODUCT DEBUG END ===");
+            
+            // Return with proper CREATED status
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
+        } catch (IOException e) {
+            System.err.println("ERROR: Failed to parse product JSON: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== CREATE PRODUCT DEBUG END (ERROR) ===");
+            throw new RuntimeException("Failed to parse product JSON: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.println("ERROR: Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== CREATE PRODUCT DEBUG END (ERROR) ===");
+            throw e;
         }
-        return productService.create(product);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
@@ -169,9 +305,10 @@ public class ProductController {
     @RequestMapping(value = "/{product_id}/item", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProductItem addProductVariation(@PathVariable(name = "product_id") Integer productId,
                                            @RequestPart(name = "image", required = false) MultipartFile image,
-                                           @RequestPart(name = "productItem") ProductItem item) {
+                                           @RequestPart(name = "productItem") ProductItem item) throws IOException {
         if (image != null && !image.isEmpty()) {
-            item.setPicture((String) cloudinaryService.upload(image).get("url"));
+            String imageUrl = localFileStorageService.saveFile(image);
+            item.setPicture(imageUrl);
         }
         System.out.println(item);
         return productItemService.create(productId, item);

@@ -105,20 +105,66 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
 
     function buildFormData(data) {
         var formData = new FormData();
-        if (data.picture) formData.append("image", data.picture.file.originFileObj)
+        
+        // Handle image upload if present
+        if (data.picture && data.picture.file && data.picture.file.originFileObj) {
+            formData.append("image", data.picture.file.originFileObj);
+        }
+        
+        // Validate options array exists and is not empty
+        if (!data.options || !Array.isArray(data.options) || data.options.length === 0) {
+            notification.error({
+                message: "Validation Error",
+                description: "Please add at least one variation option",
+                duration: 3
+            });
+            return;
+        }
+        
+        // Build productItem object
         var productItem = {
             originalPrice: data.originalPrice,
             price: data.price,
-            options: data.options.map(option_ => ({
-                id: option_.id,
-                variation: {
-                    id: option_.variation.id
+            options: data.options.map(option_ => {
+                // Safety check for option structure
+                if (!option_ || !option_.id || !option_.variation) {
+                    console.error("Invalid option structure:", option_);
+                    return null;
                 }
-            }))
+                
+                // Handle both formats:
+                // Format 1: { id: 1, variation: 1 } (variation is number)
+                // Format 2: { id: 1, variation: { id: 1 } } (variation is object)
+                const variationId = typeof option_.variation === "object" 
+                    ? option_.variation.id 
+                    : option_.variation;
+                
+                if (!variationId) {
+                    console.error("Invalid variation ID:", option_);
+                    return null;
+                }
+                
+                return {
+                    id: option_.id,
+                    variation: { id: variationId }
+                };
+            }).filter(Boolean) // Remove any null entries
+        };
+        
+        // Validate that we have at least one valid option after filtering
+        if (productItem.options.length === 0) {
+            notification.error({
+                message: "Validation Error",
+                description: "Please select valid variation options",
+                duration: 3
+            });
+            return;
         }
-        formData.append("productItem", new Blob([JSON.stringify(productItem)], { type: "application/json" }))
+        
+        formData.append("productItem", new Blob([JSON.stringify(productItem)], { type: "application/json" }));
+        
         if (submitHandler) {
-            submitHandler(formData)
+            submitHandler(formData);
         }
     }
     return (
@@ -127,7 +173,12 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
                 <Col span={24}>
                     <Row><label>Picture</label></Row>
                     <Form.Item name="picture">
-                        <Upload type="file" name="picture">
+                        <Upload 
+                            action=""
+                            name="picture"
+                            beforeUpload={() => false}
+                            maxCount={1}
+                        >
                             <Button icon={<PrefixIcon><i className="fi fi-rr-inbox-out"></i></PrefixIcon>}>Click to Upload</Button>
                         </Upload>
                     </Form.Item>

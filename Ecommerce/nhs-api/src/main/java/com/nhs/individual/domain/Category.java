@@ -1,6 +1,5 @@
 package com.nhs.individual.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -38,6 +37,6 @@ public class Category {
 
 
     @OneToMany(mappedBy = "category",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    @JsonIgnore
+    @JsonIgnoreProperties({"category", "hibernateLazyInitializer", "handler"})
     private List<Product> products;
 }

@@ -73,6 +73,8 @@ public class SecurityConfig {
                     // Public endpoints - no authentication required
                     // OAuth2 endpoints (must be public for redirect flow)
                     req.requestMatchers("/oauth2/**").permitAll()
+                    //upload endpoints
+                    .requestMatchers("/uploads/**").permitAll()
                             // Login endpoints
                             .requestMatchers("/login/**").permitAll()
                             .requestMatchers("/api/auth/login").permitAll()

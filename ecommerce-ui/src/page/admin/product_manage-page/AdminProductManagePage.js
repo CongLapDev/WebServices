@@ -1,7 +1,7 @@
 import { Card, Row, Col, Pagination, Button } from "antd";
 import ProductFilter from "../../../part/admin/product-filter/ProductFilter";
 import { useContext, useEffect, useState } from "react";
-import APIBase from "../../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../../api/ApiBase";
 import { GlobalContext } from "../../../context";
 import { Link } from "react-router-dom";
 import PrefixIcon from "../../../components/prefix-icon/PrefixIcon.js";
@@ -61,7 +61,7 @@ function AdminProductManagePage() {
                                 {products && products.content && products.content.map((product_, index) =>
                                     <Col key={index} span={12} lg={{ span: 4 }}>
                                         <Link to={`/admin/product?id=${product_.id}`}>
-                                            <Card cover={<img alt={product_.name} src={product_.picture || PlaceHolder} />} title={product_.name} hoverable={true}>
+                                            <Card cover={<img alt={product_.name} src={getImageUrl(product_.picture) || PlaceHolder} />} title={product_.name} hoverable={true}>
                                                 <p style={{ maxLines: "3", overflow: "hidden", textOverflow: "ellipsis", maxHeight: "40px" }}>{product_.description}</p>
                                             </Card>
                                         </Link>

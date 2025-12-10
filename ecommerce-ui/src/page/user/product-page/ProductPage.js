@@ -3,7 +3,7 @@ import style from './style.module.scss';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import clsx from "clsx";
 import { useContext, useEffect, useState } from "react";
-import APIBase from "../../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../../api/ApiBase";
 import ProductItemSelect from "../../../part/product-item-selection/ProductItemSelect";
 import InputNumber from "../../../components/input-number/InputNumber";
 import PrefixIcon from "../../../components/prefix-icon/PrefixIcon";
@@ -110,12 +110,12 @@ function ProductPage() {
             <Col md={{ span: 10 }} span={24} order={1}>
                 <Card className={style.card}
                     cover={<div className={style.productImage}>
-                        <img style={{ aspectRatio: "1/1", objectFit: "cover", width: " 100%" }} src={product.picture || ProductPlaceHolder} alt={product.name} />
+                        <img style={{ aspectRatio: "1/1", objectFit: "cover", width: " 100%" }} src={getImageUrl(product.picture) || ProductPlaceHolder} alt={product.name} />
                     </div>}
                 >
                     <Row className={style.pictureSlide} gutter={[16, 16]}>
                         {product.productItems.map((item, index) => {
-                            if (item.picture) return <Col className="p-2 rounded border-1 border-primary-600" sm={6} lg={3} key={index}><Image className="w-100 h-100 ratio-1x1" src={item.picture} /></Col>
+                            if (item.picture) return <Col className="p-2 rounded border-1 border-primary-600" sm={6} lg={3} key={index}><Image className="w-100 h-100 ratio-1x1" src={getImageUrl(item.picture)} /></Col>
                         })}
                     </Row>
                 </Card>

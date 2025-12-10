@@ -29,4 +29,24 @@ export const postComment = async (payload) => {
   return response.data;
 };
 
+// Product Admin APIs
+export const createProduct = async (formData) => {
+  const response = await APIBase.post("/api/v1/product", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return response.data;
+};
+
+export const updateProduct = async (id, productData) => {
+  const response = await APIBase.put(`/api/v1/product/${id}`, productData);
+  return response.data;
+};
+
+export const deleteProduct = async (id) => {
+  const response = await APIBase.delete(`/api/v1/product/${id}`);
+  return response.data;
+};
+
 

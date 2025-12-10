@@ -5,6 +5,25 @@ export const LOCAL_URL = "http://localhost:8085";
 // Public base URL used for OAuth redirects (Google, etc.)
 export const BaseURL = "https://gadgetsource.click";
 
+/**
+ * Format image URL from backend response
+ * If URL is already absolute (starts with http:// or https://), return as is
+ * If URL is relative (starts with /), prepend LOCAL_URL
+ * If URL is null/undefined, return null
+ * @param {string|null|undefined} imageUrl - Image URL from backend
+ * @returns {string|null} - Full image URL or null
+ */
+export function getImageUrl(imageUrl) {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+        return imageUrl;
+    }
+    if (imageUrl.startsWith("/")) {
+        return `${LOCAL_URL}${imageUrl}`;
+    }
+    return `${LOCAL_URL}/${imageUrl}`;
+}
+
 const APIBase = axios.create({
   baseURL: LOCAL_URL,
   // Removed withCredentials: true - backend uses JWT in Authorization headers, not cookies

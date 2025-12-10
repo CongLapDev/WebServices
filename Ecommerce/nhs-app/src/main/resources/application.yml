@@ -15,8 +15,18 @@ spring:
   jackson:
     serialization:
       fail-on-empty-beans: false
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 25MB
+      enabled: true
+  web:
+    resources:
+      static-locations: file:uploads/
 server:
   port: 8085
+file:
+  upload-dir: uploads
 nhs:
   token:
     accessTokenms: 3600000

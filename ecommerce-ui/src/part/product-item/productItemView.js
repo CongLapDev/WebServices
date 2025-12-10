@@ -1,11 +1,17 @@
 import { Image, Button, notification, Space, Input } from "antd";
-import APIBase from "../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../api/ApiBase";
 import PrefixIcon from "../../components/prefix-icon/PrefixIcon";
 import { useRef, useState } from "react";
 function ProductItemView({ productItem, setData }) {
     const [api, contextHolder] = notification.useNotification();
     const [editable, setEditable] = useState(false);
     const inputRef = useRef();
+    
+    // Safety check: ensure options array exists and has at least one item
+    const options = Array.isArray(productItem?.options) ? productItem.options : [];
+    const firstOption = options[0] || null;
+    const rowSpan = options.length > 0 ? options.length : 1;
+    
     function deleteItem(id) {
         APIBase.delete(`/api/v1/product/0/item/${id}`).then(() => {
             setData(product => {
@@ -38,38 +44,60 @@ function ProductItemView({ productItem, setData }) {
             productItem.price = inputRef.current.input.value
         }).catch(console.log)
     }
-    return (productItem && <>
-        <tr>
-            <td rowSpan={Array.isArray(productItem.options) ? productItem.options.length : 0}>
-                {productItem.id}
-            </td>
-            <td rowSpan={Array.isArray(productItem.options) ? productItem.options.length : 0}>
-                <Image width="100px" src={productItem.picture} />
-            </td>
-            <td>
-                {productItem.options[0].variation.name}
-            </td>
-            <td>
-                {productItem.options[0].value}
-            </td>
-            <td rowSpan={Array.isArray(productItem.options) ? productItem.options.length : 0}>
-                {productItem.originalPrice}
-            </td>
-            <td onDoubleClick={() => setEditable(true)} rowSpan={Array.isArray(productItem.options) ? productItem.options.length : 0}>
-                <Space><Input ref={inputRef} disabled={!editable} defaultValue={productItem.price} /><Button onClick={changePrice} type="primary" style={{ display: editable ? "block" : "none" }} icon={<PrefixIcon><i style={{ color: "white" }} className="fi fi-br-check"></i></PrefixIcon>} /></Space>
-            </td>
-            <td rowSpan={Array.isArray(productItem.options) ? productItem.options.length : 0}>
-                <Button type="text" onClick={() => deleteItem(productItem.id)}>Delete</Button>
-            </td>
-        </tr>
-        {productItem.options.map((item, index) => {
-            if (index === 0) return false;
-            return <tr key={index}>
-                <td>{item.variation.name}</td>
-                <td>{item.value}</td>
+    
+    // Don't render if productItem is invalid or has no options
+    if (!productItem || !firstOption) {
+        return null;
+    }
+    
+    return (
+        <>
+            <tr>
+                <td rowSpan={rowSpan}>
+                    {productItem.id}
+                </td>
+                <td rowSpan={rowSpan}>
+                    <Image width="100px" src={getImageUrl(productItem.picture)} />
+                </td>
+                <td>
+                    {firstOption.variation?.name || "N/A"}
+                </td>
+                <td>
+                    {firstOption.value || "N/A"}
+                </td>
+                <td rowSpan={rowSpan}>
+                    {productItem.originalPrice || 0}
+                </td>
+                <td onDoubleClick={() => setEditable(true)} rowSpan={rowSpan}>
+                    <Space>
+                        <Input 
+                            ref={inputRef} 
+                            disabled={!editable} 
+                            defaultValue={productItem.price} 
+                        />
+                        <Button 
+                            onClick={changePrice} 
+                            type="primary" 
+                            style={{ display: editable ? "block" : "none" }} 
+                            icon={<PrefixIcon><i style={{ color: "white" }} className="fi fi-br-check"></i></PrefixIcon>} 
+                        />
+                    </Space>
+                </td>
+                <td rowSpan={rowSpan}>
+                    <Button type="text" onClick={() => deleteItem(productItem.id)}>Delete</Button>
+                </td>
             </tr>
-        })}
-    </>)
+            {options.map((item, index) => {
+                if (index === 0) return null;
+                return (
+                    <tr key={index}>
+                        <td>{item.variation?.name || "N/A"}</td>
+                        <td>{item.value || "N/A"}</td>
+                    </tr>
+                );
+            })}
+        </>
+    )
 
 }
 

@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import APIBase from "../api/ApiBase";
 import { userSlide } from "../store/user/userSlide";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 
 /**
  * useAuth Hook - Manages authentication state and user data
@@ -330,27 +330,22 @@ function useAuth() {
      * 
      * IMPORTANT: Returns null when state !== 1 (loading) to prevent premature redirects
      * 
-     * CRITICAL FIX: Now correctly reads from Redux state via selector
-     * Handles both normalized format [{name: "ADMIN"}] and raw format from backend
+     * CRITICAL FIX: Memoized to prevent unnecessary recalculations and re-renders
+     * Only recalculates when state or user changes
      */
-    function role() {
+    const role = useMemo(() => {
         // CRITICAL: Return null if still loading - this prevents RoleBaseAuthorize from redirecting
         if (state !== 1) {
-            console.log("[useAuth] role() called but state is", state, "(loading) - returning null");
             return null; // Still loading
         }
         
         // Read user from Redux (via selector, always current)
         if (!user) {
-            console.log("[useAuth] role() - no user, returning ['GUEST']");
             return ["GUEST"];
         }
         
         // Safely access roles with null checks
         if (!user.account || !user.account.roles || !Array.isArray(user.account.roles)) {
-            console.log("[useAuth] role() - user has no roles or roles is not an array, returning ['GUEST']");
-            console.log("[useAuth] user.account:", user.account);
-            console.log("[useAuth] user.account?.roles:", user.account?.roles);
             return ["GUEST"];
         }
         
@@ -374,9 +369,8 @@ function useAuth() {
             return null;
         }).filter(Boolean); // Remove null/undefined values
         
-        console.log("[useAuth] role() - returning roles:", roles);
         return roles.length > 0 ? roles : ["GUEST"];
-    }
+    }, [state, user]);
     
     /**
      * hasRole(required) - Checks if user has specific role(s) using normalized roles
@@ -384,38 +378,30 @@ function useAuth() {
      * @returns {boolean|null} - true if has role, false if doesn't, null if still loading
      * 
      * IMPORTANT: Returns null when loading to prevent RoleBaseAuthorize from redirecting prematurely
+     * CRITICAL: Memoized as useCallback to prevent re-creation on every render
      */
-    function hasRole(required) {
-        // Get normalized roles using role() function
-        const roles = role();
-        
+    const hasRole = useCallback((required) => {
         // Still loading → return null (CRITICAL: prevents redirect loops)
-        if (roles === null) {
-            console.log("[useAuth] hasRole() - still loading, returning null");
+        if (role === null) {
             return null;
         }
         
         // No role required → allow access
         if (!required) {
-            console.log("[useAuth] hasRole() - no role required, returning true");
             return true;
         }
         
         // Normalize required role(s) and check
         if (Array.isArray(required)) {
-            const result = required.some(r => {
+            return required.some(r => {
                 const normalized = (r || "").toUpperCase().replace(/^ROLE_/, "");
-                return roles.includes(normalized);
+                return role.includes(normalized);
             });
-            console.log("[useAuth] hasRole() - checking array", required, "→", result);
-            return result;
         } else {
             const normalized = (required || "").toUpperCase().replace(/^ROLE_/, "");
-            const result = roles.includes(normalized);
-            console.log("[useAuth] hasRole() - checking", required, "(normalized:", normalized, ") →", result);
-            return result;
+            return role.includes(normalized);
         }
-    }
+    }, [role]);
     
     return [state, user, hasRole, requestAuth];
 }
