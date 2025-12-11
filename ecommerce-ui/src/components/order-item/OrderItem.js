@@ -5,10 +5,11 @@ import clsx from 'clsx';
 import InputNumber from '../input-number/InputNumber';
 import { useContext, useState } from 'react';
 import ProductItemSelect from '../../part/product-item-selection/ProductItemSelect';
-import APIBase from '../../api/ApiBase';
+import APIBase, { getImageUrl } from '../../api/ApiBase';
 import { memo } from 'react';
 import { GlobalContext } from '../../context';
 import Currency from '../currency/Currency';
+import ProductPlaceHolder from '../../assets/image/product_placeholder.png';
 function OrderItem({ data, disabled, onChange, ...props }) {
     const [product, setProduct] = useState();
     const [item, setItem] = useState();
@@ -55,7 +56,7 @@ function OrderItem({ data, disabled, onChange, ...props }) {
             <Col span={24}>
                 <Row align="middle" gutter={12} className={clsx(style.orderItem)}>
                     <Col span={6} className={style.image}>
-                        <img src={data.productItem.product && data.productItem.product.picture} />
+                        <img src={data.productItem.product ? getImageUrl(data.productItem.product.picture) || ProductPlaceHolder : ProductPlaceHolder} alt={data.productItem.product?.name || 'Product'} />
                     </Col>
                     <Col span={16} md={{ span: 17 }} className={style.productDetail}>
                         <Row>

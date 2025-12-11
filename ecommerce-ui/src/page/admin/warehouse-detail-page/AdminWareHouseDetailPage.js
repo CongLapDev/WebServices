@@ -13,7 +13,8 @@ function AdminWareHouseDetailPage() {
     const [uploading, setUploading] = useState(false);
     const [fileList, setFileList] = useState([]);
     const [productList, setProductList] = useState(undefined)
-    useEffect(() => {
+    
+    function loadWarehouseData() {
         APIBase.get(`/api/v1/warehouse/${params.get("id")}`).then(payload => payload.data)
             .then(data => {
                 setData(data)
@@ -43,7 +44,12 @@ function AdminWareHouseDetailPage() {
             .catch(() => {
                 globalContext.message.error("Error");
             })
-    }, [])
+    }
+    
+    useEffect(() => {
+        loadWarehouseData();
+    }, [params])
+    
     function handleUploadFile() {
         setUploading(true);
         var formData = new FormData();
@@ -52,11 +58,45 @@ function AdminWareHouseDetailPage() {
             .then(payload => payload.data)
             .then(data => {
                 globalContext.message.success("Import successfully");
+                setFileList([]); // Clear file list after successful upload
+                loadWarehouseData(); // Reload warehouse data to update UI
             })
             .catch(e => {
                 globalContext.message.error("Reading file error");
             }).finally(() => {
                 setUploading(false);
+            })
+    }
+
+    function handleDownloadSample() {
+        APIBase.get('/api/v1/warehouse/importXLSX/sample', {
+            responseType: 'blob' // Important: Get binary data
+        })
+            .then(response => {
+                // Create a blob from the response data
+                const blob = new Blob([response.data], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
+                
+                // Create a temporary URL for the blob
+                const url = window.URL.createObjectURL(blob);
+                
+                // Create a temporary anchor element and trigger download
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'warehouse_import_sample.xlsx');
+                document.body.appendChild(link);
+                link.click();
+                
+                // Clean up: remove the link and revoke the blob URL
+                link.parentNode.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                
+                globalContext.message.success("Sample file downloaded successfully");
+            })
+            .catch(e => {
+                console.error("Download error:", e);
+                globalContext.message.error("Failed to download sample file");
             })
     }
     return (<Row style={{ padding: "16px" }}>
@@ -72,7 +112,7 @@ function AdminWareHouseDetailPage() {
                                 <Button icon={<PrefixIcon><i className="fi fi-rr-file-upload"></i></PrefixIcon>} type="dashed">Select file</Button>
                             </Upload>
                             <Button loading={uploading} onClick={handleUploadFile}>Import</Button>
-                            <Button href={`${APIBase.getUri()}/api/v1/warehouse/importXLSX/sample`}>Download Sample</Button>
+                            <Button onClick={handleDownloadSample}>Download Sample</Button>
                         </Space>
                     </Row>
                 </Col>

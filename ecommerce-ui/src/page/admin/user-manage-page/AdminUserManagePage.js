@@ -6,11 +6,11 @@ import { Link } from "react-router-dom";
 import AccountStatusTag from "../../../part/account-status-tag/AccountStatusTag";
 import { formatDate } from "../../../utils/dateFormatter";
 function AdminUserManagePage() {
-    const [api, setApi] = useState("api/v1/product")
     const [page, setPage] = useState({ page: 0, size: 10 })
     const [filter, setFilter] = useState(undefined);
     const [data, setData] = useState();
     const [loader, setLoader] = useState(true);
+    
     function onFilter(value) {
         Object.keys(value).forEach(key => {
             if (!value[key]) delete value[key];
@@ -18,22 +18,25 @@ function AdminUserManagePage() {
         if (Object.keys(value).length > 0) setFilter(value);
         else setFilter(undefined);
     }
+    
+    // Build API URL based on filter and page
     useEffect(() => {
+        setLoader(true);
+        let apiUrl = `api/v1/user?page=${page.page}&size=${page.size}`;
+        
         if (filter) {
             var param = new URLSearchParams(filter);
-            var pagination = new URLSearchParams(page);
-            setApi(api => `api/v1/user?${param.toString()}&${pagination.toString()}`);
-        } else {
-            setApi(api => `api/v1/user?page=${page.page}&size=${page.size}`)
+            apiUrl = `api/v1/user?${param.toString()}&page=${page.page}&size=${page.size}`;
         }
-    }, [filter, page])
-    useEffect(() => {
-        APIBase.get(api).then(payload => {
+        
+        APIBase.get(apiUrl).then(payload => {
             setData(payload.data);
-        }).catch(console.log).finally(() => {
+        }).catch(err => {
+            console.error("Error fetching users:", err);
+        }).finally(() => {
             setLoader(false);
-        })
-    }, [api])
+        });
+    }, [filter, page])
     const columns = [
         {
             title: "First Name",

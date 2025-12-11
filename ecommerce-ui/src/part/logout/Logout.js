@@ -19,6 +19,8 @@ function Logout({ trigger }) {
     function logout() {
         dispatch(userAddress.actions.clear);
         dispatch(userSlide.actions.clear);
+        // Clear token from localStorage
+        window.localStorage.removeItem("AUTH_TOKEN");
         APIBase.post("/logout")
             .then(() => {
                 navigate("/login");
@@ -26,6 +28,8 @@ function Logout({ trigger }) {
             .catch(e => {
                 globalContext.message.error("Error");
                 console.log(e);
+                // Navigate to login even if API call fails
+                navigate("/login");
             })
     }
     return (<Wrapper onClick={logout}>{trigger || <Button icon={<PrefixIcon></PrefixIcon>} type="primary" block danger>Logout</Button>}</Wrapper>);
