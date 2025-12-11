@@ -60,7 +60,17 @@ public class ProductService {
         return productRepository.findAllByWarehouseId(warehouseId);
     }
     public Product update(Integer id,Product product){
-        return productRepository.findById(id).map(oldProduct-> ObjectUtils.merge(oldProduct,product,Product.class)).orElseThrow(()->new RuntimeException("Product not found"));
+        return productRepository.findById(id).map(oldProduct-> {
+            // Merge new data into old product
+            Product merged = ObjectUtils.merge(oldProduct, product, Product.class);
+            // Ensure category is properly set if provided
+            if (product.getCategory() != null && product.getCategory().getId() != null) {
+                Integer categoryId = product.getCategory().getId();
+                categoryService.findById(categoryId).ifPresent(merged::setCategory);
+            }
+            // Save and return updated product
+            return productRepository.save(merged);
+        }).orElseThrow(()->new RuntimeException("Product not found"));
     }
     public void delete(Integer id){
         productRepository.deleteById(id);

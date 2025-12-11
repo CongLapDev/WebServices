@@ -304,14 +304,86 @@ public class ProductController {
 
     @RequestMapping(value = "/{product_id}/item", method = RequestMethod.POST, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProductItem addProductVariation(@PathVariable(name = "product_id") Integer productId,
-                                           @RequestPart(name = "image", required = false) MultipartFile image,
-                                           @RequestPart(name = "productItem") ProductItem item) throws IOException {
-        if (image != null && !image.isEmpty()) {
-            String imageUrl = localFileStorageService.saveFile(image);
-            item.setPicture(imageUrl);
+                                           @RequestPart(name = "picture", required = false) MultipartFile picture,
+                                           @RequestPart(name = "productItem") String productItemJson,
+                                           HttpServletRequest request) throws IOException {
+        System.out.println("=== ADD PRODUCT VARIATION DEBUG START ===");
+        System.out.println("Product ID: " + productId);
+        System.out.println("Raw productItemJson received: " + productItemJson);
+        System.out.println("productItemJson type: " + (productItemJson != null ? productItemJson.getClass().getName() : "null"));
+        System.out.println("productItemJson length: " + (productItemJson != null ? productItemJson.length() : 0));
+        
+        // Log multipart request info
+        if (request instanceof StandardMultipartHttpServletRequest multipartRequest) {
+            System.out.println("Multipart keys: " + multipartRequest.getMultiFileMap().keySet());
+            System.out.println("All multipart parameter names: " + multipartRequest.getParameterMap().keySet());
         }
-        System.out.println(item);
-        return productItemService.create(productId, item);
+        
+        try {
+            // Configure ObjectMapper for flexible deserialization
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            mapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+            
+            // Parse JSON string to ProductItem object
+            System.out.println("Parsing productItemJson to ProductItem object...");
+            ProductItem item;
+            if (productItemJson == null || productItemJson.trim().isEmpty()) {
+                throw new IllegalArgumentException("productItem JSON string is null or empty");
+            }
+            item = mapper.readValue(productItemJson, ProductItem.class);
+            System.out.println("ProductItem parsed successfully:");
+            System.out.println("  - Price: " + item.getPrice());
+            System.out.println("  - Original Price: " + item.getOriginalPrice());
+            System.out.println("  - Options count: " + (item.getOptions() != null ? item.getOptions().size() : 0));
+            System.out.println("  - Picture before upload: " + item.getPicture());
+            
+            // Clear picture from JSON (if any) - we'll set it from file upload
+            item.setPicture(null);
+            
+            // Handle picture upload
+            if (picture != null && !picture.isEmpty()) {
+                System.out.println("Starting local file upload...");
+                System.out.println("  - File size: " + picture.getSize() + " bytes");
+                System.out.println("  - Content type: " + picture.getContentType());
+                System.out.println("  - Original filename: " + picture.getOriginalFilename());
+                String imageUrl = localFileStorageService.saveFile(picture);
+                System.out.println("Local file upload completed!");
+                System.out.println("Image URL: " + imageUrl);
+                if (imageUrl != null) {
+                    item.setPicture(imageUrl);
+                    System.out.println("Image uploaded successfully, URL set: " + imageUrl);
+                }
+            } else {
+                System.out.println("No picture to upload, picture will remain null");
+            }
+            
+            System.out.println("ProductItem state BEFORE saving:");
+            System.out.println("  - Price: " + item.getPrice());
+            System.out.println("  - Original Price: " + item.getOriginalPrice());
+            System.out.println("  - Picture URL: " + item.getPicture());
+            System.out.println("  - Options: " + (item.getOptions() != null ? item.getOptions().size() : 0));
+            
+            ProductItem savedItem = productItemService.create(productId, item);
+            System.out.println("ProductItem saved successfully!");
+            System.out.println("ProductItem state AFTER saving:");
+            System.out.println("  - ID: " + savedItem.getId());
+            System.out.println("  - Price: " + savedItem.getPrice());
+            System.out.println("  - Picture URL: " + savedItem.getPicture());
+            System.out.println("=== ADD PRODUCT VARIATION DEBUG END ===");
+            
+            return savedItem;
+        } catch (IOException e) {
+            System.err.println("ERROR: Failed to parse productItem JSON: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== ADD PRODUCT VARIATION DEBUG END (ERROR) ===");
+            throw new RuntimeException("Failed to parse productItem JSON: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.println("ERROR: Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== ADD PRODUCT VARIATION DEBUG END (ERROR) ===");
+            throw e;
+        }
     }
 
     @RequestMapping(value = "/item/{item_id}", method = RequestMethod.PUT)

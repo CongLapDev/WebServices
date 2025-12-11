@@ -5,7 +5,7 @@ spring:
     import: optional:classpath:application-common.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3307/WebServices?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://localhost:3307/WebServices?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false&characterEncoding=UTF-8&useUnicode=true
     username: WebServices_user
     password: 123
   jpa:

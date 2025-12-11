@@ -23,10 +23,13 @@ function ProductDetailPage() {
     
     useLayoutEffect(() => {
         fetchProduct()
-    }, [])
+    }, [urlParams.get("id")])
     
     async function fetchProduct() {
-        APIBase.get(`api/v1/product/${urlParams.get("id")}`)
+        const productId = urlParams.get("id");
+        if (!productId) return;
+        
+        APIBase.get(`api/v1/product/${productId}`)
             .then((payload) => {
                 setData(payload.data)
             }).catch(console.log)
@@ -35,9 +38,31 @@ function ProductDetailPage() {
     function handleUpdateProduct(productData) {
         globalContext.loader(true);
         updateProduct(data.id, productData)
-            .then((updatedProduct) => {
+            .then(async (updatedProduct) => {
                 globalContext.message.success("Product updated successfully");
-                setData(updatedProduct);
+                // Small delay to ensure database transaction is committed
+                await new Promise(resolve => setTimeout(resolve, 100));
+                // Fetch fresh data from server with cache-busting to ensure latest data
+                const productId = urlParams.get("id");
+                if (productId) {
+                    try {
+                        const response = await APIBase.get(`api/v1/product/${productId}`, {
+                            params: { _t: Date.now() } // Cache-busting parameter
+                        });
+                        if (response.data) {
+                            setData(response.data);
+                        }
+                    } catch (fetchError) {
+                        console.error("Error fetching updated product:", fetchError);
+                        // Fallback: use the response from update API if fetch fails
+                        if (updatedProduct) {
+                            setData(updatedProduct);
+                        }
+                    }
+                } else if (updatedProduct) {
+                    // If no productId but we have updatedProduct, use it
+                    setData(updatedProduct);
+                }
             })
             .catch((e) => {
                 const errorMessage = e.response?.data?.message || 

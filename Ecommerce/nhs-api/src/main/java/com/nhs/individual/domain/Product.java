@@ -33,7 +33,7 @@ public class Product {
     @NotNull(message = "Product's name is required")
     private String name;
 
-    @Column(name = "description",columnDefinition = "text")
+    @Column(name = "description", columnDefinition = "TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
     private String description;
 
     @Column(name = "picture", length = 512)

@@ -131,7 +131,10 @@ export const login = async (credentials) => {
     // Use REST-style /api/auth/login endpoint
     console.log("[AUTH API] Sending request to backend...");
     const response = await APIBase.post("/api/auth/login", credentials, {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json; charset=UTF-8",
+        "Accept": "application/json"
+      }
     });
     
     console.log("[AUTH API] ✓ Response received");

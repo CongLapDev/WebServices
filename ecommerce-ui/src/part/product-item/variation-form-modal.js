@@ -107,8 +107,12 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
         var formData = new FormData();
         
         // Handle image upload if present
-        if (data.picture && data.picture.file && data.picture.file.originFileObj) {
-            formData.append("image", data.picture.file.originFileObj);
+        // data.picture is now a fileList array from Form.Item
+        if (data.picture && Array.isArray(data.picture) && data.picture.length > 0) {
+            const file = data.picture[0];
+            if (file && file.originFileObj) {
+                formData.append("picture", file.originFileObj);
+            }
         }
         
         // Validate options array exists and is not empty
@@ -161,7 +165,8 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
             return;
         }
         
-        formData.append("productItem", new Blob([JSON.stringify(productItem)], { type: "application/json" }));
+        // Append productItem as JSON string (not Blob) so backend can parse it correctly
+        formData.append("productItem", JSON.stringify(productItem));
         
         if (submitHandler) {
             submitHandler(formData);
@@ -172,7 +177,16 @@ function VariationForm({ submitHandler, loading, onCancel, product }) {
             <Row gutter={14}>
                 <Col span={24}>
                     <Row><label>Picture</label></Row>
-                    <Form.Item name="picture">
+                    <Form.Item 
+                        name="picture"
+                        valuePropName="fileList"
+                        getValueFromEvent={(e) => {
+                            if (Array.isArray(e)) {
+                                return e;
+                            }
+                            return e?.fileList || [];
+                        }}
+                    >
                         <Upload 
                             action=""
                             name="picture"

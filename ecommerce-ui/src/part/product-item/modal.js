@@ -10,20 +10,29 @@ function VariationFormModal({ product, setProduct, reload, ...props }) {
     const [loading, setLoading] = useState(false);
     function onSubmitHandler(data) {
         globalContext.loader("");
-        console.log(data)
-        APIBase.post(`api/v1/product/${product.id}/item`, data)
+        console.log("Submitting variation form data:", data);
+        APIBase.post(`api/v1/product/${product.id}/item`, data, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
             .then((payload) => {
+                const newProductItem = payload.data;
                 setProduct(product => {
-                    product.productItems.push(payload.data);
-                    return product;
+                    const updatedProduct = { ...product };
+                    if (!updatedProduct.productItems) {
+                        updatedProduct.productItems = [];
+                    }
+                    updatedProduct.productItems.push(newProductItem);
+                    return updatedProduct;
                 });
                 notification.success({
                     message: "Success",
                     description: "Added Product Item",
                     duration: 1
-                })
-                reload(value => !value)
-                return payload.data;
+                });
+                reload(value => !value);
+                return newProductItem;
             }).catch((err) => {
                 notification.error({
                     message: "Failure",
