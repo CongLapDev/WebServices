@@ -107,13 +107,16 @@ public class ShopOrdersXLSX {
         if (status == OrderStatus.PAID.id) {
             style.setFillForegroundColor(IndexedColors.WHITE.index);
             style.setFillBackgroundColor(IndexedColors.WHITE.index);
-        } else if (status == OrderStatus.PENDING.id) {
+        } else if (status == OrderStatus.PENDING_PAYMENT.id) {
             style.setFillForegroundColor(IndexedColors.CORAL.index);
             style.setFillBackgroundColor(IndexedColors.CORAL.index);
+        } else if (status == OrderStatus.CONFIRMED.id) {
+            style.setFillForegroundColor(IndexedColors.LIGHT_BLUE.index);
+            style.setFillBackgroundColor(IndexedColors.LIGHT_BLUE.index);
         } else if (status == OrderStatus.PREPARING.id) {
             style.setFillForegroundColor(IndexedColors.YELLOW.index);
             style.setFillBackgroundColor(IndexedColors.YELLOW.index);
-        } else if (status == OrderStatus.DELIVERING.id) {
+        } else if (status == OrderStatus.SHIPPING.id) {
             style.setFillForegroundColor(IndexedColors.BLUE.index);
             style.setFillBackgroundColor(IndexedColors.BLUE.index);
         } else if (status == OrderStatus.DELIVERED.id) {
@@ -122,10 +125,10 @@ public class ShopOrdersXLSX {
         } else if (status == OrderStatus.COMPLETED.id) {
             style.setFillForegroundColor(IndexedColors.GREEN.index);
             style.setFillBackgroundColor(IndexedColors.GREEN.index);
-        } else if (status == OrderStatus.CANCEL.id) {
+        } else if (status == OrderStatus.CANCELLED.id) {
             style.setFillForegroundColor(IndexedColors.ROSE.index);
             style.setFillBackgroundColor(IndexedColors.ROSE.index);
-        } else if (status == OrderStatus.RETURN.id) {
+        } else if (status == OrderStatus.RETURNED.id) {
             style.setFillForegroundColor(IndexedColors.RED.index);
             style.setFillBackgroundColor(IndexedColors.RED.index);
         }

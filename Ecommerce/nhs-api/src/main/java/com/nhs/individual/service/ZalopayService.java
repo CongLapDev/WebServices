@@ -182,7 +182,7 @@ public class ZalopayService {
                     shopOrderPayment.setStatus(PaymentStatus.CANCEL.value);
 
                     ShopOrderStatus shopOrderStatus=new ShopOrderStatus();
-                    shopOrderStatus.setStatus(OrderStatus.CANCEL.id);
+                    shopOrderStatus.setStatus(OrderStatus.CANCELLED.id);
                     shopOrderStatus.setNote("Your order is cancelled due to error occurring in payment process. Payment code: "+app_trans_Id);
                     shopOrderStatus.setDetail("Your order is cancelled due to error occurring in payment process. Payment code: "+app_trans_Id);
                     shopOrderStatusService.updateOrderStatus(orderId,shopOrderStatus);

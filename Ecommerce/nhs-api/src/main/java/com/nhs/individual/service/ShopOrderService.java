@@ -44,9 +44,9 @@ public class ShopOrderService {
     }
     public ShopOrder createOrder(ShopOrder order) {
         ShopOrderStatus shopOrderStatus=new ShopOrderStatus();
-        shopOrderStatus.setStatus(OrderStatus.PENDING.id);
+        shopOrderStatus.setStatus(OrderStatus.PENDING_PAYMENT.id);
         shopOrderStatus.setOrder(order);
-        shopOrderStatus.setNote("Create order");
+        shopOrderStatus.setNote("Order created - awaiting payment");
         order.setStatus(List.of(shopOrderStatus));
         order.getOrderLines().forEach(line->line.setOrder(order));
         order.getPayment().setOrder(order);
