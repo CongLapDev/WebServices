@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import OrderItem from "../../../components/order-item/OrderItem";
-import { Row, Col, Button, Card } from 'antd';
+import { Row, Col, Button, Card, Empty, Space } from 'antd';
 import style from './style.module.scss';
 import APIBase from "../../../api/ApiBase";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import useAuth from "../../../secure/useAuth";
 import { Spin } from "antd";
 import { debounce, throttle } from "lodash";
 import { Currency } from "../../../components";
+import { ShoppingCartOutlined, ShopOutlined } from '@ant-design/icons';
 function UserCart() {
     const [state, user] = useAuth();
     const [page, setPage] = useState({
@@ -29,7 +30,13 @@ function UserCart() {
     }
 
     useEffect(() => {
-        if (user) fetch();
+        if (user) {
+            // Reset state when user changes
+            setData([]);
+            setPage({ index: 0, isEnd: false });
+            setSelectedItem([]);
+            fetch();
+        }
         const onScroll = scrollToLoad;
         window.addEventListener("scroll", onScroll);
         return () => {
@@ -117,6 +124,50 @@ function UserCart() {
         })
         APIBase.delete(`/api/v1/cart/${id}`).catch(console.log)
     }
+    // Show empty state if cart is empty
+    if (data.length === 0 && !load && page.index === 0) {
+        return (
+            <Row gutter={[16, 16]}>
+                <Col span={24}>
+                    <Card>
+                        <Empty
+                            image={<ShoppingCartOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />}
+                            description={
+                                <div>
+                                    <p style={{ fontSize: 16, marginBottom: 8 }}>
+                                        <strong>Giỏ hàng của bạn đang trống</strong>
+                                    </p>
+                                    <p style={{ color: '#8c8c8c', marginBottom: 16 }}>
+                                        Bạn đã đặt đơn hàng? Theo dõi trạng thái đơn hàng trong <strong>Lịch sử đơn hàng</strong>
+                                    </p>
+                                    <Space size="middle">
+                                        <Button 
+                                            type="primary" 
+                                            icon={<ShopOutlined />}
+                                            onClick={() => {
+                                                // Navigate to order history (first tab after Cart in UserCartPage)
+                                                navigate("/cart", { 
+                                                    state: { activeTab: 2 } // "To Pay" tab
+                                                });
+                                            }}
+                                        >
+                                            Xem đơn hàng của tôi
+                                        </Button>
+                                        <Button 
+                                            onClick={() => navigate("/")}
+                                        >
+                                            Tiếp tục mua sắm
+                                        </Button>
+                                    </Space>
+                                </div>
+                            }
+                        />
+                    </Card>
+                </Col>
+            </Row>
+        );
+    }
+
     return (<Row gutter={[8, 8]} md={{ gutter: [16, 16] }} >
         <Col span={24} md={{ span: 12 }} lg={{ span: 14 }}>
             <div title="Your Item">
@@ -135,13 +186,20 @@ function UserCart() {
                 <h4><Currency value={selectedItems.reduce((pre, item) => {
                     return pre + item.qty * item.productItem.price;
                 }, 0)} /></h4>
-                <Button onClick={() => {
-                    navigate("/checkout", {
-                        state: {
-                            data: selectedItems
-                        }
-                    })
-                }}>Checkout</Button>
+                <Button 
+                    type="primary"
+                    block
+                    disabled={selectedItems.length === 0}
+                    onClick={() => {
+                        navigate("/checkout", {
+                            state: {
+                                data: selectedItems
+                            }
+                        })
+                    }}
+                >
+                    Checkout
+                </Button>
             </Card>
         </Col>
     </Row>);

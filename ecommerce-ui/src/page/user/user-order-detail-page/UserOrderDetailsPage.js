@@ -1,42 +1,147 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import APIBase from "../../../api/ApiBase";
 import { GlobalContext } from "../../../context";
-import { Card, Col, Row, Tag, Divider, Button, Modal, Form, Input, Space } from "antd";
+import { Card, Col, Row, Tag, Divider, Button, Modal, Form, Input, Space, Spin } from "antd";
+import { ReloadOutlined } from '@ant-design/icons';
 import { Description } from "../../../components";
 import AddressTag from "../../../components/address-tag/AddressTag";
 import useAuth from "../../../secure/useAuth";
 import OrderStatusTag from "../../../part/admin/order-status-tag/OrderStatusTag";
+import { isFinalStatus } from "../../../utils/orderUtils";
+
 function UserOrderDetailPage() {
     const globalContext = useContext(GlobalContext);
     const [state, user, hasRole] = useAuth();
     const [urlParams, setRequestParams] = useSearchParams();
     const [data, setData] = useState();
     const [modal, setModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const navigate = useNavigate();
+    const pollingIntervalRef = useRef(null);
+    const orderId = urlParams.get("id");
+
+    // Stop polling
+    const stopPolling = useCallback(() => {
+        if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+        }
+    }, []);
+
+    // Load order data
+    const loadOrder = useCallback(async (showLoading = false) => {
+        if (!orderId) return;
+        
+        if (showLoading) setRefreshing(true);
+        try {
+            const response = await APIBase.get(`/api/v1/order/${orderId}`);
+            const newData = response.data;
+            setData(newData);
+            
+            // Check if order is in final status, stop polling if so
+            const currentStatus = newData.status?.[newData.status.length - 1]?.status;
+            if (currentStatus && isFinalStatus(currentStatus)) {
+                stopPolling();
+            }
+        } catch (e) {
+            if (showLoading) {
+                globalContext.message.error("Không thể tải thông tin đơn hàng");
+            }
+        } finally {
+            if (showLoading) setRefreshing(false);
+        }
+    }, [orderId, globalContext, stopPolling]);
+
+    // Manual refresh handler
+    const handleRefresh = useCallback(() => {
+        loadOrder(true);
+    }, [loadOrder]);
+
+    // Start polling for order status updates
+    const startPolling = useCallback(() => {
+        // Clear any existing interval
+        stopPolling();
+        
+        // Poll every 15 seconds
+        pollingIntervalRef.current = setInterval(() => {
+            loadOrder(false);
+        }, 15000);
+    }, [loadOrder, stopPolling]);
+
+    // Handle window focus - refresh when user returns to tab
+    useEffect(() => {
+        const handleFocus = () => {
+            if (orderId) {
+                loadOrder(false);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [orderId, loadOrder]);
+
+    // Initial load and setup polling
+    useEffect(() => {
+        if (orderId) {
+            setLoading(true);
+            loadOrder(false).finally(() => {
+                setLoading(false);
+                // Start polling after initial load
+                // Small delay to ensure data is set
+                setTimeout(() => {
+                    startPolling();
+                }, 500);
+            });
+        }
+
+        // Cleanup on unmount
+        return () => {
+            stopPolling();
+        };
+    }, [orderId, loadOrder, startPolling, stopPolling]);
+
+    // Update polling when data changes (to check if we should stop)
+    useEffect(() => {
+        if (data) {
+            const currentStatus = data.status?.[data.status.length - 1]?.status;
+            if (currentStatus && isFinalStatus(currentStatus)) {
+                stopPolling();
+            } else if (!pollingIntervalRef.current) {
+                // If not polling and order is active, start polling
+                startPolling();
+            }
+        }
+    }, [data, startPolling, stopPolling]);
+
     function cancelOrder(payload) {
+        setLoading(true);
         APIBase.post(`/api/v1/order/${data.id}/status/CANCEL`, payload)
             .then(() => {
                 navigate("/", {
                     status: "success",
                     title: "Successfully cancelled your order"
                 })
-
             }).catch(() => {
                 globalContext.message.error("Can't cancel this order right now");
             })
+            .finally(() => {
+                setLoading(false);
+            });
+    }
+    if (loading && !data) {
+        return (
+            <div style={{ padding: 24, textAlign: 'center' }}>
+                <Spin size="large" />
+                <p style={{ marginTop: 16 }}>Đang tải thông tin đơn hàng...</p>
+            </div>
+        );
     }
 
-    useEffect(() => {
-        APIBase.get(`/api/v1/order/${urlParams.get("id")}`)
-            .then(payload => payload.data)
-            .then(setData)
-            .catch(e => {
-                globalContext.message.error("Error");
-            })
-    }, [])
     return (
-
         <>
             <Modal footer={null} title="Are you sure?" open={modal} onCancel={() => { setModal(false) }}>
                 <h4>Please let's we know your advises </h4>
@@ -55,15 +160,42 @@ function UserOrderDetailPage() {
                         <Col span={24}>
                             <Row justify="end">
                                 <Space>
-                                    <Button danger htmlType="submit" type="primary">Continue</Button>
+                                    <Button danger htmlType="submit" type="primary" loading={loading}>
+                                        Continue
+                                    </Button>
                                 </Space>
                             </Row>
                         </Col>
                     </Row>
-
                 </Form>
             </Modal>
+            
             <Row gutter={[0, 16]} md={{ gutter: [24, 24] }}>
+                {/* Header with Refresh Button */}
+                <Col span={24}>
+                    <Card 
+                        extra={
+                            <Button 
+                                icon={<ReloadOutlined />} 
+                                onClick={handleRefresh}
+                                loading={refreshing}
+                                type="text"
+                            >
+                                {refreshing ? 'Đang tải...' : 'Làm mới'}
+                            </Button>
+                        }
+                    >
+                        <Row justify="space-between" align="middle">
+                            <Col>
+                                <h2 style={{ margin: 0 }}>Đơn hàng #{data?.id}</h2>
+                            </Col>
+                            <Col>
+                                {data && <OrderStatusTag status={data.status[data.status.length - 1]?.status} />}
+                            </Col>
+                        </Row>
+                    </Card>
+                </Col>
+
                 <Col span={24}>
                     <Card>
                         {data && <AddressTag data={data} />}
@@ -109,7 +241,9 @@ function UserOrderDetailPage() {
 
                 {data && data.status[data.status.length - 1]?.status <= 2 &&
                     <Col span={24}>
-                        <Button block danger onClick={() => setModal(true)}>Cancel</Button>
+                        <Button block danger onClick={() => setModal(true)} loading={loading}>
+                            Cancel
+                        </Button>
                     </Col>
                 }
             </Row>

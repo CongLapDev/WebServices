@@ -75,8 +75,25 @@ function UserOrderCheckOutPage() {
         }
         APIBase.post('/api/v1/order', payload)
             .then(payload => payload.data)
-            .then(data => {
-                globalContext.loader(false)
+            .then(orderData => {
+                // Clear cart items after successful order creation
+                const deletePromises = data.map(cartItem => 
+                    APIBase.delete(`/api/v1/cart/${cartItem.id}`).catch(err => {
+                        console.warn(`Failed to delete cart item ${cartItem.id}:`, err);
+                        // Don't fail the whole flow if cart deletion fails
+                    })
+                );
+                
+                // Wait for all cart deletions (but don't block navigation)
+                Promise.all(deletePromises)
+                    .then(() => {
+                        console.log('Cart items cleared after order creation');
+                    })
+                    .catch(err => {
+                        console.warn('Some cart items may not have been cleared:', err);
+                    });
+
+                globalContext.loader(false);
                 if (value.payment == 1) {
                     navigate(`/result`, {
                         state: {
@@ -86,7 +103,7 @@ function UserOrderCheckOutPage() {
                         }
                     });
                 } else if (value.payment == 2) {
-                    navigate(`/zalopay/purchase?id=${data.id}`);
+                    navigate(`/zalopay/purchase?id=${orderData.id}`);
                 }
             })
             .catch(e => {
