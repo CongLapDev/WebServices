@@ -1,17 +1,41 @@
 package com.nhs.individual.zalopay.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * ZaloPay v2 API response model
+ * Maps snake_case JSON fields from ZaloPay v2 API response
+ * Note: ZaloPay v2 does NOT return qr_code field
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class OrderPurchaseInfo{
+    // ZaloPay v2 returns snake_case fields: return_code, return_message, etc.
+    @JsonProperty("return_code")
     private Integer return_code;
+    
+    @JsonProperty("return_message")
     private String return_message;
+    
+    @JsonProperty("sub_return_code")
     private Integer sub_return_code;
+    
+    @JsonProperty("sub_return_message")
     private String sub_return_message;
+    
+    @JsonProperty("zp_trans_token")
     private String zp_trans_token;
+    
+    @JsonProperty("order_url")
     private String order_url;
+    
+    @JsonProperty("order_token")
     private String order_token;
-    private String qr_code;
+    
+    // Note: ZaloPay v2 does NOT return qr_code - removed field
+    // Frontend should redirect to order_url instead
+    
+    @JsonProperty("app_trans_id")
     private String app_trans_id;
 
 
@@ -77,13 +101,5 @@ public class OrderPurchaseInfo{
 
     public void setOrder_token(String order_token) {
         this.order_token = order_token;
-    }
-
-    public String getQr_code() {
-        return qr_code;
-    }
-
-    public void setQr_code(String qr_code) {
-        this.qr_code = qr_code;
     }
 }

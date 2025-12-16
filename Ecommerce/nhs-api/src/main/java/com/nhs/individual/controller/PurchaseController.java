@@ -9,11 +9,12 @@ import com.nhs.individual.service.ZalopayService;
 // import com.nhs.individual.vnpay.VNPayService;
 // import com.nhs.individual.vnpay.config.VNPayConfig;
 import com.nhs.individual.zalopay.model.OrderCallback;
-import com.nhs.individual.zalopay.model.OrderPurchaseInfo;
+import com.nhs.individual.zalopay.model.ZaloPayResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -26,23 +27,47 @@ public class PurchaseController {
     // VnPay service commented out - not needed for sandbox
     // private final VNPayService vnPayService;
     private final ShopOrderService shopOrderService;
+    
+    /**
+     * Create ZaloPay order and get payment URL
+     * Always returns HTTP 200 with JSON response (success or error)
+     */
     @RequestMapping(value="/{orderId}/zalopay",method= RequestMethod.GET)
-    public OrderPurchaseInfo purchase(@PathVariable(name = "orderId") Integer orderId){
+    public ZaloPayResponse purchase(@PathVariable(name = "orderId") Integer orderId){
         return zalopayService.purchaseZalo(orderId);
     }
+    
+    /**
+     * ZaloPay callback handler (server-to-server)
+     */
     @RequestMapping(value = "/zalopay/callback",method = RequestMethod.POST)
     public String zalopayCallBank(@RequestBody OrderCallback callback) throws JsonProcessingException, NoSuchAlgorithmException, InvalidKeyException {
         return zalopayService.zalopayHandlerCallBack(callback);
     }
 
+    /**
+     * Query ZaloPay payment status
+     */
     @RequestMapping(value = "/zalopay/status",method = RequestMethod.GET)
     public String getzaloOrderStatus(@RequestParam String app_trans_id) throws URISyntaxException {
         return zalopayService.getOrderStatus(app_trans_id);
     }
+    
+    /**
+     * Request ZaloPay refund
+     */
     @RequestMapping(value = "/zalopay/refund",method = RequestMethod.GET)
     public ResponseMessage zalopayRefund(@RequestParam(name = "orderId") Integer orderId){
         IUserDetail userDetail= (IUserDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         return zalopayService.refund(orderId,userDetail);
+    }
+    
+    /**
+     * Get ZaloPay refund status
+     */
+    @RequestMapping(value = "/zalopay/refund/status",method = RequestMethod.GET)
+    public String getRefundStatus(@RequestParam(name = "mRefundId") String mRefundId) throws IOException {
+        return zalopayService.getRefundStatus(mRefundId);
     }
 //    @RequestMapping(value="/{orderId}/vnpay",method= RequestMethod.GET)
 //    public String purchaseByVNPay(@PathVariable(name = "orderId") Integer orderId,

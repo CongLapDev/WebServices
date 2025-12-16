@@ -31,7 +31,10 @@ function OrderList({ state, user }) {
     }, [state])
     function fetchOrder(page) {
         if ((!page.isEnd) && (!page.loaded)) {
-            APIBase.get(`/api/v1/order?status=${state}&userId=${user.id}&page=${page.index}`)
+            // Admin can optionally pass userId to filter specific user's orders
+            // If user is provided, include it, otherwise backend shows all orders
+            const userIdParam = user?.id ? `&userId=${user.id}` : '';
+            APIBase.get(`/api/v1/order?status=${state}${userIdParam}&page=${page.index}`)
                 .then(payload => {
                     setData(data_ => {
                         return [...data_, ...payload.data.content];
@@ -59,7 +62,7 @@ function OrderList({ state, user }) {
     }
     return (<Row justify="center">
         <Col span={24} lg={{ span: 16 }} >
-            {data.map((item, index) => <UserOrder key={index} data={item} />)}
+            {data.map((item) => <UserOrder key={item.id} data={item} />)}
         </Col>
         {load && <Col span={24}>
             <Row justify="center" style={{ padding: "10px" }}><Spin /></Row>

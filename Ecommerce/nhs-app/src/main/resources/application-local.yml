@@ -18,13 +18,20 @@ spring:
                   - profile
 payment:
   zalo:
-    enabled: true
-    appid: 554
-    key1: 8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn
-    key2: uUfsWgfLkRLzq6W2uNXTCxrfxs51auny
-    endpoint:
+    app-id: 2554
+    key1: ${ZALOPAY_KEY1:sdngKKJmqEMzvh5QQcdD2A9XBSKUNaYn}
+    key2: ${ZALOPAY_KEY2:trMrHtvjo6myautxDUiAcYsVtaeQ8nhf}
+    endpoints:
+      # ZaloPay Sandbox v2 API endpoints
       create: https://sb-openapi.zalopay.vn/v2/create
       query: https://sb-openapi.zalopay.vn/v2/query
+      refund: https://sandbox.zalopay.com.vn/v001/tpe/partialrefund
+      refund-status: https://sandbox.zalopay.com.vn/v001/tpe/getpartialrefundstatus
+    callback-url: ${APP_BASE_URL:http://localhost:8085}/api/v1/purchase/zalopay/callback
+    redirect-url: ${FRONTEND_URL:http://localhost:3000}/zalopay/result
+    payment-timeout-minutes: 15
+    polling-interval-seconds: 15
+    max-polling-attempts: 60
   # VnPay configuration commented out - not needed for sandbox
   # vnpay:
   #   version: 2.1.0

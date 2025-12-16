@@ -32,7 +32,7 @@ function UserCartPage() {
         {
             key: 2,
             label: "To Pay",
-            children: <OrderList state="PENDING" user={user} />
+            children: <OrderList state="PENDING_PAYMENT" user={user} />
         },
         {
             key: 3,
@@ -41,8 +41,8 @@ function UserCartPage() {
         },
         {
             key: 4,
-            label: "Delivering",
-            children: <OrderList state="DELIVERING" user={user} />
+            label: "Shipping",
+            children: <OrderList state="SHIPPING" user={user} />
         },
         {
             key: 5,
@@ -57,12 +57,12 @@ function UserCartPage() {
         {
             key: 7,
             label: "Cancelled",
-            children: <OrderList state="CANCEL" user={user} />
+            children: <OrderList state="CANCELLED" user={user} />
         },
         {
             key: 8,
-            label: "Return",
-            children: <OrderList state="RETURN" user={user} />
+            label: "Returned",
+            children: <OrderList state="RETURNED" user={user} />
         },
 
     ]

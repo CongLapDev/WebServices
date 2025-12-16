@@ -8,14 +8,15 @@ function OrderFilter({ onFilter }) {
                 <label>Status</label>
                 <Form.Item name="status">
                     <Select>
-                        <Select.Option value="PENDING">PENDING</Select.Option>
+                        <Select.Option value="PENDING_PAYMENT">PENDING_PAYMENT</Select.Option>
+                        <Select.Option value="PAID">PAID</Select.Option>
+                        <Select.Option value="CONFIRMED">CONFIRMED</Select.Option>
                         <Select.Option value="PREPARING">PREPARING</Select.Option>
-                        <Select.Option value="DELIVERING">DELIVERING</Select.Option>
+                        <Select.Option value="SHIPPING">SHIPPING</Select.Option>
                         <Select.Option value="DELIVERED">DELIVERED</Select.Option>
                         <Select.Option value="COMPLETED">COMPLETED</Select.Option>
-                        <Select.Option value="CANCEL">CANCEL</Select.Option>
-                        <Select.Option value="RETURN">RETURN</Select.Option>
-                        <Select.Option value="PAID">PAID</Select.Option>
+                        <Select.Option value="CANCELLED">CANCELLED</Select.Option>
+                        <Select.Option value="RETURNED">RETURNED</Select.Option>
                     </Select>
                 </Form.Item>
             </Col>

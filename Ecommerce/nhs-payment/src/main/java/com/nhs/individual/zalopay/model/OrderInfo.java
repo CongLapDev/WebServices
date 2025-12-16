@@ -2,11 +2,12 @@ package com.nhs.individual.zalopay.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nhs.individual.utils.Mapable;
-import com.nhs.individual.zalopay.config.ZaloConfig;
 import com.nhs.individual.zalopay.crypto.HMACUtil;
 import lombok.Getter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 @ToString
@@ -57,7 +58,9 @@ public class OrderInfo implements Mapable {
         this.expire_duration_seconds= 900L;
         this.app_id = app_id;
         this.app_user = app_user;
-        this.app_trans_id = ZaloConfig.getCurrentTimeString("yyMMdd")+"_"+app_trans_id;
+        // app_trans_id must be passed fully formatted from service layer (yyMMdd_orderId_timestamp)
+        this.app_trans_id = app_trans_id;
+        // app_time set only once
         this.app_time = System.currentTimeMillis();
         this.amount = amount;
         this.description = description;
@@ -66,9 +69,23 @@ public class OrderInfo implements Mapable {
         this.embed_data = embed_data;
         this.callback_url = callback_url;
         this.title = title;
-        this.app_time=System.currentTimeMillis();
+        
+        // Generate MAC according to ZaloPay spec: app_id|app_trans_id|app_user|amount|app_time|embed_data|item
         String hmacInput=this.app_id+"|"+this.app_trans_id+"|"+this.app_user+"|"+this.amount+"|"+this.app_time+"|"+this.embed_data+"|"+this.item;
-        this.mac = HMACUtil.HMacHexStringEncode(HMACUtil.HMACSHA256,key1.trim(),hmacInput);
+        log.debug("========== ZaloPay MAC Generation ==========");
+        log.debug("  HMAC Input: {}", hmacInput);
+        
+        if (key1 == null || key1.trim().isEmpty()) {
+            log.error("❌ CRITICAL: key1 is null or empty! Cannot generate MAC.");
+            throw new IllegalArgumentException("ZaloPay key1 cannot be null or empty");
+        }
+        
+        log.debug("  Key1 (first 10 chars): {}...", key1.substring(0, Math.min(10, key1.length())));
+        
+        this.mac = HMACUtil.HMacHexStringEncode(HMACUtil.HMACSHA256, key1.trim(), hmacInput);
+        
+        log.debug("  Generated MAC (first 20 chars): {}...", this.mac != null && this.mac.length() > 20 ? this.mac.substring(0, 20) : this.mac);
+        log.debug("===========================================");
     }
 
 }

@@ -33,10 +33,11 @@ function OrderList({ state, user }) {
     
     // Refresh order list (first page only, for status updates)
     const refreshOrderList = useCallback(() => {
-        if (!user?.id || !state) return;
+        if (!state) return;
         
         // Only refresh first page to get status updates
-        APIBase.get(`/api/v1/order?status=${state}&userId=${user.id}&page=0`)
+        // Backend infers userId from JWT SecurityContext
+        APIBase.get(`/api/v1/order?status=${state}&page=0`)
             .then(payload => {
                 const newOrders = payload.data.content || [];
                 // Update existing orders with new data, or add new ones
@@ -55,7 +56,7 @@ function OrderList({ state, user }) {
             .catch(err => {
                 console.warn('Failed to refresh order list:', err);
             });
-    }, [user, state]);
+    }, [state]);
     
     // Start polling for order status updates
     const startPolling = useCallback(() => {
@@ -69,7 +70,7 @@ function OrderList({ state, user }) {
     // Handle window focus - refresh when user returns to tab
     useEffect(() => {
         const handleFocus = () => {
-            if (user?.id && state) {
+            if (state) {
                 refreshOrderList();
             }
         };
@@ -78,10 +79,10 @@ function OrderList({ state, user }) {
         return () => {
             window.removeEventListener('focus', handleFocus);
         };
-    }, [user, state, refreshOrderList]);
+    }, [state, refreshOrderList]);
     
     useEffect(() => {
-        if (!user?.id || !state) return;
+        if (!state) return;
         
         console.log(state);
         setData([]);
@@ -99,12 +100,13 @@ function OrderList({ state, user }) {
             stopPolling();
             clearTimeout(timer);
         };
-    }, [state, user, startPolling, stopPolling]);
+    }, [state, startPolling, stopPolling]);
     
     function fetchOrder(page) {
         if ((!page.isEnd) && (!page.loaded)) {
             setPage(page_ => ({ ...page_, loaded: true }));
-            APIBase.get(`/api/v1/order?status=${state}&userId=${user.id}&page=${page.index}`)
+            // Backend infers userId from JWT SecurityContext
+            APIBase.get(`/api/v1/order?status=${state}&page=${page.index}`)
                 .then(payload => {
                     setData(data_ => {
                         return [...data_, ...payload.data.content];
@@ -132,7 +134,7 @@ function OrderList({ state, user }) {
     }
     return (<Row justify="center">
         <Col span={24} lg={{ span: 16 }} >
-            {data.map((item, index) => <UserOrder key={index} data={item} />)}
+            {data.map((item) => <UserOrder key={item.id} data={item} />)}
         </Col>
         {load && <Col span={24}>
             <Row justify="center" style={{ padding: "10px" }}><Spin /></Row>
