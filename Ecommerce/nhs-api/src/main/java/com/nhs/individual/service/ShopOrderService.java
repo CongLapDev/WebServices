@@ -7,6 +7,7 @@ import com.nhs.individual.constant.PaymentStatus;
 import com.nhs.individual.domain.ShopOrder;
 import com.nhs.individual.domain.ShopOrderStatus;
 import com.nhs.individual.repository.ShopOrderRepository;
+import com.nhs.individual.repository.ShippingMethodRepository;
 import com.nhs.individual.zalopay.config.ZaloConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,8 @@ public class ShopOrderService {
     private final ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
     @Autowired
     ShopOrderRepository orderRepository;
+    @Autowired
+    ShippingMethodRepository shippingMethodRepository;
     @Autowired
     AuthService authService;
     public Optional<ShopOrder> findById(Integer id){
@@ -77,12 +80,40 @@ public class ShopOrderService {
         }
         
         // Add shipping price
-        if (order.getShippingMethod() != null && order.getShippingMethod().getPrice() != null) {
-            BigDecimal shippingPrice = order.getShippingMethod().getPrice();
-            calculatedTotal = calculatedTotal.add(shippingPrice);
-            log.info("✓ Shipping price: {}", shippingPrice);
+        if (order.getShippingMethod() != null) {
+            BigDecimal shippingPrice = null;
+            
+            // If shipping method price is not loaded, fetch it from database
+            if (order.getShippingMethod().getPrice() != null) {
+                shippingPrice = order.getShippingMethod().getPrice();
+                log.info("✓ Shipping price from loaded entity: {}", shippingPrice);
+            } else if (order.getShippingMethod().getId() != null) {
+                // Fetch shipping method from database to get the price
+                Optional<com.nhs.individual.domain.ShippingMethod> loadedShippingMethodOpt = 
+                    shippingMethodRepository.findById(order.getShippingMethod().getId());
+                
+                if (loadedShippingMethodOpt.isPresent()) {
+                    com.nhs.individual.domain.ShippingMethod loadedShippingMethod = loadedShippingMethodOpt.get();
+                    shippingPrice = loadedShippingMethod.getPrice();
+                    // Update the order's shipping method with the loaded entity
+                    order.setShippingMethod(loadedShippingMethod);
+                    log.info("✓ Shipping method loaded from DB: {} (ID: {}), price: {}", 
+                        loadedShippingMethod.getName(), 
+                        loadedShippingMethod.getId(), 
+                        shippingPrice);
+                } else {
+                    log.warn("⚠️ Shipping method with ID {} not found in database", order.getShippingMethod().getId());
+                }
+            }
+            
+            if (shippingPrice != null) {
+                calculatedTotal = calculatedTotal.add(shippingPrice);
+                log.info("✓ Shipping price added to total: {}", shippingPrice);
+            } else {
+                log.warn("⚠️ Shipping price is NULL or could not be loaded");
+            }
         } else {
-            log.warn("⚠️ No shipping method or shipping price is NULL");
+            log.warn("⚠️ No shipping method provided");
         }
         
         // Set the calculated total (override frontend value)

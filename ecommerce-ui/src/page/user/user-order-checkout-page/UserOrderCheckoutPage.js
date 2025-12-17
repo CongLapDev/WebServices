@@ -29,7 +29,6 @@ function UserOrderCheckOutPage() {
             .then(payload => payload.data)
             .then((data) => {
                 setShipMethods(data);
-                setCurrentShipMethod(data[0])
                 return data;
             }).catch(console.log);
     }, [dispatch])
@@ -39,14 +38,34 @@ function UserOrderCheckOutPage() {
         setCurrentShipMethod(shipMethods.find(method => method.id == id));
     }
 
-    function calculateTotal() {
+    function calculateSubtotal() {
         return data.reduce((pre, item) => {
             return pre + item.productItem.price * item.qty;
-        }, 0) + (currentShipMethod ? currentShipMethod.price : 0);
+        }, 0);
+    }
+
+    function getShippingFee() {
+        return currentShipMethod ? currentShipMethod.price : 0;
+    }
+
+    function calculateTotal() {
+        return calculateSubtotal() + getShippingFee();
+    }
+
+    function formatPrice(value) {
+        return value ? Number.parseInt(value).toLocaleString('vi-VN') + ' VND' : '0 VND';
     }
 
     function submitHandler(value) {
         globalContext.loader(true);
+
+        // Get the selected shipping method to calculate total correctly
+        const selectedShipMethod = shipMethods && shipMethods.find(method => method.id == value.shipmethod);
+        const shippingFee = selectedShipMethod ? selectedShipMethod.price : 0;
+        const subtotal = data.reduce((pre, item) => {
+            return pre + item.productItem.price * item.qty;
+        }, 0);
+        const total = subtotal + shippingFee;
 
         var payload = {
             orderLines: data.map(line => ({
@@ -71,7 +90,7 @@ function UserOrderCheckOutPage() {
                 id: value.shipmethod
             },
             note: value.note,
-            total: calculateTotal()
+            total: total
         }
         APIBase.post('/api/v1/order', payload)
             .then(payload => payload.data)
@@ -103,7 +122,17 @@ function UserOrderCheckOutPage() {
                         }
                     });
                 } else if (value.payment == 2) {
-                    navigate(`/zalopay/purchase?id=${orderData.id}`);
+                    // Open ZaloPay payment page in a new tab
+                    const zalopayUrl = `/zalopay/purchase?id=${orderData.id}`;
+                    window.open(zalopayUrl, '_blank');
+                    // Navigate to a success page or stay on current page
+                    navigate(`/result`, {
+                        state: {
+                            status: "info",
+                            title: "Redirecting to ZaloPay",
+                            subTitle: "The payment page has been opened in a new tab. Please complete the payment there."
+                        }
+                    });
                 }
             })
             .catch(e => {
@@ -125,7 +154,9 @@ function UserOrderCheckOutPage() {
                                     required
                                     rules={[{ required: "Required" }]}
                                     name="address">
-                                    <Select style={{ width: "100%", height: "fit-content" }} options={address && address.map((item, index) => ({
+                                    <Select 
+                                        placeholder="Select delivery address" 
+                                        style={{ width: "100%", height: "fit-content" }} options={address && address.map((item, index) => ({
                                         value: item.id.addressId,
                                         label: <AddressTag data={item} />
                                     }))}
@@ -161,13 +192,15 @@ function UserOrderCheckOutPage() {
                         <Col span={24}>
                             <Card title={<Row align="middle"><PrefixIcon><i className="fi fi-rr-ticket"></i></PrefixIcon><span>Payment</span></Row>}>
                                 <Form.Item rules={[{ required: "Required" }]} name="payment">
-                                    <Select options={[{
-                                        label: "COD",
-                                        value: 1
-                                    }, {
-                                        label: "ZaloPay",
-                                        value: 2
-                                    }]} />
+                                    <Select 
+                                        placeholder="Select a payment method" 
+                                        options={[{
+                                            label: "COD",
+                                            value: 1
+                                        }, {
+                                            label: "ZaloPay",
+                                            value: 2
+                                        }]} />
                                 </Form.Item>
                             </Card>
                         </Col>
@@ -175,16 +208,16 @@ function UserOrderCheckOutPage() {
                             <Card title={<Row align="middle"><PrefixIcon><i className="fi fi-rr-shipping-fast"></i></PrefixIcon><span>Delivery Method</span></Row>}>
                                 <Form.Item rules={[{ required: "Required" }]} name="shipmethod">
                                     <Select
+                                        placeholder="Select a delivery method"
                                         options={
                                             shipMethods && shipMethods.map(item => ({
                                                 value: item.id,
                                                 label: <Col span={24}>
                                                     <Row><Description>{item.name}</Description></Row>
-                                                    <span>{item.price}</span>
+                                                    <span>{formatPrice(item.price)}</span>
                                                 </Col>
                                             }))
                                         }
-                                        defaultValue={shipMethods && shipMethods[0].id}
                                         onChange={setShipMethod} style={{ width: "100%", height: "fit-content" }}
                                     />
                                 </Form.Item>
@@ -200,7 +233,26 @@ function UserOrderCheckOutPage() {
                         </Col>
                         <Col span={24}>
                             <Card title="Total">
-                                <h5>{calculateTotal()}</h5>
+                                <Row gutter={[0, 12]} style={{ padding: '8px 0' }}>
+                                    <Col span={24}>
+                                        <Row justify="space-between" align="middle">
+                                            <Col><span>Subtotal:</span></Col>
+                                            <Col><strong>{formatPrice(calculateSubtotal())}</strong></Col>
+                                        </Row>
+                                    </Col>
+                                    <Col span={24}>
+                                        <Row justify="space-between" align="middle">
+                                            <Col><span>Shipping Fee:</span></Col>
+                                            <Col><strong>{formatPrice(getShippingFee())}</strong></Col>
+                                        </Row>
+                                    </Col>
+                                    <Col span={24} style={{ borderTop: '1px solid #f0f0f0', paddingTop: '12px', marginTop: '8px' }}>
+                                        <Row justify="space-between" align="middle">
+                                            <Col><span style={{ fontSize: '1.1rem', fontWeight: 600 }}>Total:</span></Col>
+                                            <Col><span style={{ fontSize: '1.8rem', fontWeight: 700, color: '#1890ff' }}>{formatPrice(calculateTotal())}</span></Col>
+                                        </Row>
+                                    </Col>
+                                </Row>
                             </Card>
                         </Col>
                         <Col span={24}>
