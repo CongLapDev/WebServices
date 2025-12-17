@@ -23,6 +23,7 @@ import UserOrderDetailPage from "../page/user/user-order-detail-page/UserOrderDe
 import UserResultPage from "../page/user/result/UserResultPage.js";
 import UserOrderCheckOutPage from "../page/user/user-order-checkout-page/UserOrderCheckoutPage.js";
 import ZaloPayProcess from "../page/user/zalopay-result-page/index.js";
+import ZalopayResultPage from "../page/user/zalopay-result-page/ZalopayResultPage.js";
 import ForgotPasswordPage from "../page/user/forgot-password/ForgotPasswordPage.js";
 import AuthSuccessPage from "../page/auth/AuthSuccessPage.js";
 
@@ -45,6 +46,7 @@ export const userRouter = [
     { path: "/checkout", component: UserOrderCheckOutPage, layout: HeadOnly },
     { path: "/order", component: UserOrderDetailPage, layout: HeadOnly },
     { path: "/zalopay/purchase", component: ZaloPayProcess, layout: HeadOnly },
+    { path: "/zalopay/result", component: ZalopayResultPage, layout: HeadOnly },
 ];
 export const adminRouter = [
     // /admin route must be FIRST in adminRouter to ensure it's matched before other admin routes

@@ -1,9 +1,14 @@
 package com.nhs.individual.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nhs.individual.constant.OrderStatus;
+import com.nhs.individual.domain.ShopOrder;
+import com.nhs.individual.domain.ShopOrderStatus;
+import com.nhs.individual.exception.OrderNotFoundException;
 import com.nhs.individual.responsemessage.ResponseMessage;
 import com.nhs.individual.secure.IUserDetail;
 import com.nhs.individual.service.ShopOrderService;
+import com.nhs.individual.service.ShopOrderStatusService;
 import com.nhs.individual.service.ZalopayService;
 // VnPay imports commented out - not needed for sandbox
 // import com.nhs.individual.vnpay.VNPayService;
@@ -27,6 +32,7 @@ public class PurchaseController {
     // VnPay service commented out - not needed for sandbox
     // private final VNPayService vnPayService;
     private final ShopOrderService shopOrderService;
+    private final ShopOrderStatusService shopOrderStatusService;
     
     /**
      * Create ZaloPay order and get payment URL
@@ -68,6 +74,69 @@ public class PurchaseController {
     @RequestMapping(value = "/zalopay/refund/status",method = RequestMethod.GET)
     public String getRefundStatus(@RequestParam(name = "mRefundId") String mRefundId) throws IOException {
         return zalopayService.getRefundStatus(mRefundId);
+    }
+    
+    /**
+     * Get order payment status by ZaloPay app_trans_id
+     * Used by frontend after ZaloPay redirect to verify payment status
+     * 
+     * @param appTransId ZaloPay transaction ID (format: yyMMdd_orderId_timestamp)
+     * @return Order payment status information
+     */
+    @RequestMapping(value = "/zalopay/result", method = RequestMethod.GET)
+    public java.util.Map<String, Object> getOrderByZaloPayAppTransId(@RequestParam(name = "apptransid") String appTransId) {
+        // Parse app_trans_id to extract orderId
+        // Format: yyMMdd_orderId_timestamp (e.g., 251217_28_1765957661610)
+        if (appTransId == null || appTransId.trim().isEmpty()) {
+            throw new IllegalArgumentException("apptransid is required");
+        }
+        
+        String[] parts = appTransId.split("_");
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("Invalid apptransid format: " + appTransId);
+        }
+        
+        // Extract orderId from parts[1] (format: yyMMdd_orderId_timestamp)
+        Integer orderId;
+        try {
+            orderId = Integer.parseInt(parts[1]);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid orderId in apptransid: " + appTransId);
+        }
+        
+        // Find order
+        ShopOrder order = shopOrderService.findById(orderId)
+            .orElseThrow(() -> new OrderNotFoundException(orderId));
+        
+        // Get current payment status
+        java.util.Optional<ShopOrderStatus> currentStatus = shopOrderStatusService.getCurrentStatus(orderId);
+        String paymentStatus = "PROCESSING"; // Default
+        
+        if (currentStatus.isPresent()) {
+            Integer statusId = currentStatus.get().getStatus();
+            // Convert status ID to OrderStatus enum
+            OrderStatus status = null;
+            for (OrderStatus s : OrderStatus.values()) {
+                if (s.id == statusId) {
+                    status = s;
+                    break;
+                }
+            }
+            
+            if (status == OrderStatus.PAID) {
+                paymentStatus = "PAID";
+            } else if (status == OrderStatus.CANCELLED) {
+                paymentStatus = "CANCELLED";
+            }
+        }
+        
+        // Return response
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("orderId", orderId);
+        response.put("paymentStatus", paymentStatus);
+        response.put("total", order.getTotal());
+        
+        return response;
     }
 //    @RequestMapping(value="/{orderId}/vnpay",method= RequestMethod.GET)
 //    public String purchaseByVNPay(@PathVariable(name = "orderId") Integer orderId,
