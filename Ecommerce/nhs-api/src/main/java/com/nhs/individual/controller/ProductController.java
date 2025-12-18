@@ -269,11 +269,98 @@ public class ProductController {
         }
     }
 
+    // Update product with JSON (for updates without image)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     @PreAuthorize("hasAuthority('ADMIN')")
     public Product updateProduct(@PathVariable(name = "id") Integer id,
                                  @RequestBody Product product) {
         return productService.update(id, product);
+    }
+    
+    // Update product with multipart/form-data (for updates with image)
+    @RequestMapping(value = "/{id}", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Product updateProductWithImage(
+            @PathVariable(name = "id") Integer id,
+            @RequestPart("product") String productJson,
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            HttpServletRequest request) throws IOException {
+        System.out.println("=== UPDATE PRODUCT WITH IMAGE DEBUG START ===");
+        System.out.println("Product ID: " + id);
+        
+        try {
+            // Configure ObjectMapper for flexible deserialization
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            mapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+            
+            // Parse JSON string to Product object
+            System.out.println("Parsing productJson to Product object...");
+            Product product = mapper.readValue(productJson, Product.class);
+            System.out.println("Product parsed successfully:");
+            System.out.println("  - Name: " + product.getName());
+            System.out.println("  - Category ID: " + (product.getCategory() != null ? product.getCategory().getId() : "null"));
+            System.out.println("  - Picture from JSON: " + product.getPicture());
+            
+            // Get existing product to preserve picture if no new one is uploaded
+            Product existingProduct = productService.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product with id " + id + " not found"));
+            
+            // Handle image upload
+            if (image != null && !image.isEmpty()) {
+                System.out.println("Starting local file upload...");
+                System.out.println("  - File size: " + image.getSize() + " bytes");
+                System.out.println("  - Content type: " + image.getContentType());
+                System.out.println("  - Original filename: " + image.getOriginalFilename());
+                
+                String imageUrl = localFileStorageService.saveFile(image);
+                System.out.println("Local file upload completed!");
+                System.out.println("Image URL: " + imageUrl);
+                
+                if (imageUrl != null) {
+                    product.setPicture(imageUrl);
+                    System.out.println("Image uploaded successfully, URL set: " + imageUrl);
+                }
+            } else {
+                // No new image uploaded - handle picture from JSON
+                // If picture is null in JSON and existing product has picture, it means delete
+                // If picture is null in JSON and existing product has no picture, keep it null
+                // If picture has a value in JSON, use it (existing URL)
+                if (product.getPicture() == null && existingProduct.getPicture() != null) {
+                    // Picture is being removed - keep it null
+                    System.out.println("Picture will be removed (set to null)");
+                } else if (product.getPicture() == null) {
+                    // No picture in request and no existing picture - keep null
+                    System.out.println("No picture to update, keeping null");
+                } else {
+                    // Picture URL provided in JSON (existing URL) - use it
+                    System.out.println("Using existing picture URL from JSON: " + product.getPicture());
+                }
+            }
+            
+            System.out.println("Product state BEFORE updating:");
+            System.out.println("  - Name: " + product.getName());
+            System.out.println("  - Picture URL: " + product.getPicture());
+            
+            Product updatedProduct = productService.update(id, product);
+            System.out.println("Product updated successfully!");
+            System.out.println("Product state AFTER updating:");
+            System.out.println("  - ID: " + updatedProduct.getId());
+            System.out.println("  - Picture URL: " + updatedProduct.getPicture());
+            System.out.println("=== UPDATE PRODUCT WITH IMAGE DEBUG END ===");
+            
+            return updatedProduct;
+        } catch (IOException e) {
+            System.err.println("ERROR: Failed to parse product JSON: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== UPDATE PRODUCT WITH IMAGE DEBUG END (ERROR) ===");
+            throw new RuntimeException("Failed to parse product JSON: " + e.getMessage(), e);
+        } catch (Exception e) {
+            System.err.println("ERROR: Unexpected error: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("=== UPDATE PRODUCT WITH IMAGE DEBUG END (ERROR) ===");
+            throw e;
+        }
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
@@ -386,12 +473,96 @@ public class ProductController {
         }
     }
 
+    // Update product item with JSON (for price and other fields, no picture)
     @RequestMapping(value = "/item/{item_id}", method = RequestMethod.PUT)
     @PreAuthorize("hasAuthority('ADMIN')")
     public ProductItem updateProductItem(@PathVariable(name = "product_id", required = false) Integer productId,
                                          @PathVariable(name = "item_id") Integer itemId,
                                          @RequestBody ProductItem productItem) {
+        // Preserve existing picture if not provided in update
+        ProductItem existingItem = productItemService.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product item with id " + itemId + " not found"));
+        
+        // If picture is not provided in the update, preserve the existing one
+        if (productItem.getPicture() == null) {
+            productItem.setPicture(existingItem.getPicture());
+        }
+        
         return productItemService.update(itemId, productItem);
+    }
+    
+    // Update product item with multipart/form-data (for picture upload)
+    @RequestMapping(value = "/item/{item_id}/picture", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ProductItem updateProductItemWithPicture(@PathVariable(name = "product_id", required = false) Integer productId,
+                                                     @PathVariable(name = "item_id") Integer itemId,
+                                                     @RequestPart(name = "picture", required = false) MultipartFile picture,
+                                                     @RequestPart(name = "productItem", required = false) String productItemJson,
+                                                     HttpServletRequest request) throws IOException {
+        System.out.println("=== UPDATE PRODUCT ITEM WITH PICTURE DEBUG START ===");
+        System.out.println("Product Item ID: " + itemId);
+        
+        // Get existing product item
+        ProductItem existingItem = productItemService.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product item with id " + itemId + " not found"));
+        
+        // Create a new ProductItem object for updates (don't modify the entity directly)
+        ProductItem itemToUpdate = new ProductItem();
+        itemToUpdate.setPrice(existingItem.getPrice());
+        itemToUpdate.setOriginalPrice(existingItem.getOriginalPrice());
+        itemToUpdate.setOptions(existingItem.getOptions());
+        itemToUpdate.setPicture(existingItem.getPicture());
+        
+        // If productItem JSON is provided, merge it with existing item
+        if (productItemJson != null && !productItemJson.trim().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                mapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+                
+                ProductItem jsonItem = mapper.readValue(productItemJson, ProductItem.class);
+                // Merge JSON data into update item
+                if (jsonItem.getPrice() != null) itemToUpdate.setPrice(jsonItem.getPrice());
+                if (jsonItem.getOriginalPrice() != null) itemToUpdate.setOriginalPrice(jsonItem.getOriginalPrice());
+                if (jsonItem.getOptions() != null) itemToUpdate.setOptions(jsonItem.getOptions());
+                
+                System.out.println("ProductItem JSON parsed and merged successfully");
+            } catch (IOException e) {
+                System.err.println("WARNING: Failed to parse productItem JSON, using existing item: " + e.getMessage());
+            }
+        }
+        
+        // Handle picture upload
+        if (picture != null && !picture.isEmpty()) {
+            System.out.println("Starting local file upload...");
+            System.out.println("  - File size: " + picture.getSize() + " bytes");
+            System.out.println("  - Content type: " + picture.getContentType());
+            System.out.println("  - Original filename: " + picture.getOriginalFilename());
+            String imageUrl = localFileStorageService.saveFile(picture);
+            System.out.println("Local file upload completed!");
+            System.out.println("Image URL: " + imageUrl);
+            if (imageUrl != null) {
+                itemToUpdate.setPicture(imageUrl);
+                System.out.println("Image uploaded successfully, URL set: " + imageUrl);
+            }
+        } else {
+            System.out.println("No new picture uploaded, preserving existing picture: " + existingItem.getPicture());
+        }
+        
+        System.out.println("ProductItem state BEFORE updating:");
+        System.out.println("  - Price: " + itemToUpdate.getPrice());
+        System.out.println("  - Original Price: " + itemToUpdate.getOriginalPrice());
+        System.out.println("  - Picture URL: " + itemToUpdate.getPicture());
+        
+        ProductItem updatedItem = productItemService.update(itemId, itemToUpdate);
+        System.out.println("ProductItem updated successfully!");
+        System.out.println("ProductItem state AFTER updating:");
+        System.out.println("  - ID: " + updatedItem.getId());
+        System.out.println("  - Price: " + updatedItem.getPrice());
+        System.out.println("  - Picture URL: " + updatedItem.getPicture());
+        System.out.println("=== UPDATE PRODUCT ITEM WITH PICTURE DEBUG END ===");
+        
+        return updatedItem;
     }
 
     @RequestMapping(value = "/{product_id}/item/{item_id}", method = RequestMethod.DELETE)

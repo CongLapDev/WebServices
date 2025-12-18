@@ -3,8 +3,12 @@ package com.nhs.individual.service;
 import com.nhs.individual.domain.Product;
 import com.nhs.individual.domain.ProductItem;
 import com.nhs.individual.exception.ResourceNotFoundException;
+import com.nhs.individual.repository.CartItemRepository;
+import com.nhs.individual.repository.OrderLineRepository;
 import com.nhs.individual.repository.ProductItemRepository;
+import com.nhs.individual.repository.WarehouseItemRepository;
 import com.nhs.individual.utils.ObjectUtils;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +27,12 @@ public class ProductItemService {
     CategoryService categoryService;
     @Autowired
     VariationService variationService;
+    @Autowired
+    OrderLineRepository orderLineRepository;
+    @Autowired
+    CartItemRepository cartItemRepository;
+    @Autowired
+    WarehouseItemRepository warehouseItemRepository;
     public ProductItem create(Integer productId, ProductItem productItem){
         return productService.findById(productId).map(product -> {
             productItem.setProduct(product);
@@ -45,7 +55,28 @@ public class ProductItemService {
     public Collection<ProductItem> findAllByProductId(Integer productId){
         return productService.findById(productId).map(Product::getProductItems).orElse(Collections.emptyList());
     }
+    @Transactional
     public void deleteById(int id){
+        // Check if product item exists
+        if (!productItemRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Product item with id " + id + " not found");
+        }
+        
+        // Check if product item has any order lines (cannot delete items that have been ordered)
+        boolean hasOrderLines = orderLineRepository.existsByProductItemId(id);
+        if (hasOrderLines) {
+            throw new IllegalStateException(
+                "Cannot delete product variation because it has been ordered. " +
+                "Product items with existing orders cannot be deleted.");
+        }
+        
+        // Delete cart items that reference this product item
+        cartItemRepository.deleteByProductItemId(id);
+        
+        // Delete warehouse items that reference this product item
+        warehouseItemRepository.deleteByProductItemId(id);
+        
+        // Now safe to delete the product item
         productItemRepository.deleteById(id);
     }
     public ProductItem update(Integer id,ProductItem productItem){

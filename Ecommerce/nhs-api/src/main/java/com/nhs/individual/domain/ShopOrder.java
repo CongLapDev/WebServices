@@ -37,7 +37,7 @@ public class ShopOrder implements Serializable {
     private Address address;
 
 
-    @Column(name = "order_date",insertable = false,columnDefinition = "DATETIME default now()")
+    @Column(name = "order_date", columnDefinition = "DATETIME")
     private Date orderDate;
 
     @Column(name = "total",scale = 2, precision = 18)

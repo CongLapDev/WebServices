@@ -122,6 +122,11 @@ public class ShopOrderService {
         log.info("✓✓✓ FINAL ORDER TOTAL: {} ✓✓✓", calculatedTotal);
         log.info("========================================");
         
+        // Set orderDate explicitly in UTC to avoid timezone issues
+        // This ensures the timestamp is stored correctly regardless of MySQL server timezone
+        order.setOrderDate(new java.util.Date());
+        log.info("Order date set to: {} (UTC timestamp: {})", order.getOrderDate(), order.getOrderDate().getTime());
+        
         // Validate total > 0
         if (calculatedTotal.compareTo(BigDecimal.ZERO) <= 0) {
             log.error("❌ Order total is 0 or negative: {}", calculatedTotal);

@@ -8,8 +8,9 @@ import {
 } from '@ant-design/icons';
 import { useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import APIBase from "../../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../../api/ApiBase";
 import { GlobalContext } from "../../../context";
+import PlaceHolder from "../../../assets/image/product_placeholder.png";
 import { Currency, Description } from "../../../components";
 import OrderStatusTag from "../../../part/admin/order-status-tag/OrderStatusTag";
 import { formatDateTime } from "../../../utils/dateFormatter";
@@ -45,6 +46,7 @@ function AdminOrderDetailPage() {
             .then(data => {
                 setData(data);
                 console.log('Order loaded:', data);
+                console.log('Order date raw:', data.orderDate, 'Type:', typeof data.orderDate);
             })
             .catch(() => {
                 globalContext.message.error("Không thể tải thông tin đơn hàng");
@@ -578,7 +580,7 @@ function AdminOrderDetailPage() {
                                             <Col xs={6} sm={4}>
                                                 <img
                                                     style={{ width: "100%", height: "auto" }}
-                                                    src={item.productItem.product.picture}
+                                                    src={getImageUrl(item.productItem.product.picture) || PlaceHolder}
                                                     alt={item.productItem.product.name}
                                                 />
                                             </Col>

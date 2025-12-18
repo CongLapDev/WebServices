@@ -22,4 +22,12 @@ public interface CartItemRepository extends JpaRepository<CartItem,Integer> {
     @Modifying
     @Query(value = "update cart_item set qty=?2 , product_item_id=?3 where id=?1",nativeQuery = true)
     void update(Integer id,Integer qty, Integer productItemId);
+    
+    @Modifying
+    @Query(value = "delete from cart_item where product_item_id in (select id from product_item where product_id = ?1)", nativeQuery = true)
+    void deleteByProductId(Integer productId);
+    
+    @Modifying
+    @Query(value = "delete from cart_item where product_item_id = ?1", nativeQuery = true)
+    void deleteByProductItemId(Integer productItemId);
 }

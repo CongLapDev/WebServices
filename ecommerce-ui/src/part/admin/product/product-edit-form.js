@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { Button, Input, TreeSelect, Row, Col, Space, Image } from "antd";
+import { Button, Input, TreeSelect, Row, Col, Space, Image, Upload } from "antd";
 import PrefixIcon from "../../../components/prefix-icon/PrefixIcon.js";
 import { GlobalContext } from "../../../context/index.js";
 import APIBase, { getImageUrl } from "../../../api/ApiBase.js";
@@ -15,6 +15,7 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
     const [categoryTree, setCategoryTree] = useState([]);
     const [loading, setLoading] = useState(false);
     const [imageRemoved, setImageRemoved] = useState(false);
+    const [newImage, setNewImage] = useState(null); // Track new image file for upload
 
     // Fetch categories từ API - Load full category tree (same as product-add-form)
     useEffect(() => {
@@ -71,7 +72,8 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
             description: product?.description || "",
             manufacturer: product?.manufacturer || "",
             category: product?.category?.id || null,
-            picture: product?.picture || null
+            picture: product?.picture || null,
+            image: null // For new image upload
         },
         enableReinitialize: true,
         validationSchema: validateSchema,
@@ -82,38 +84,84 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
                 return;
             }
 
-            // Build product object for JSON update (NO file upload in PUT)
-            const productData = {
-                name: values.name,
-                description: values.description || null,
-                manufacturer: values.manufacturer || null,
-                picture: imageRemoved ? null : values.picture, // Set to null if removed
-                category: {
-                    id: values.category
+            // Check if we have a new image to upload
+            if (newImage) {
+                // Use multipart/form-data for image upload
+                const formData = new FormData();
+                formData.append("image", newImage);
+                
+                const productData = {
+                    name: values.name,
+                    description: values.description || null,
+                    manufacturer: values.manufacturer || null,
+                    picture: null, // Will be set from uploaded image
+                    category: {
+                        id: values.category
+                    }
+                };
+                formData.append("product", JSON.stringify(productData));
+                
+                if (submitHandler) {
+                    // For custom submit handler, we need to handle FormData
+                    updateProductWithImage(product.id, formData);
+                } else {
+                    updateProductWithImage(product.id, formData);
                 }
-            };
-            
-            if (submitHandler) {
-                submitHandler(productData);
             } else {
-                updateProduct(product.id, productData);
+                // No new image - use JSON update
+                const productData = {
+                    name: values.name,
+                    description: values.description || null,
+                    manufacturer: values.manufacturer || null,
+                    picture: imageRemoved ? null : values.picture, // Set to null if removed
+                    category: {
+                        id: values.category
+                    }
+                };
+                
+                if (submitHandler) {
+                    submitHandler(productData);
+                } else {
+                    updateProduct(product.id, productData);
+                }
             }
         },
     });
 
-    // Update form values when product changes
+    // Track previous product ID to avoid resetting imageRemoved unnecessarily
+    const previousProductId = useRef(product?.id);
+    
+    // Update form values when product changes (only reset imageRemoved if product ID actually changed)
     useEffect(() => {
         if (product) {
+            // Only reset imageRemoved if this is a different product (ID changed)
+            const productIdChanged = previousProductId.current !== product.id;
+            previousProductId.current = product.id;
+            
+            // If imageRemoved is true and we're updating the same product, preserve the null picture
+            // Otherwise, use the product's picture
+            const pictureValue = (imageRemoved && !productIdChanged) ? null : (product.picture || null);
+            
             formik.setValues({
                 name: product.name || "",
                 description: product.description || "",
                 manufacturer: product.manufacturer || "",
                 category: product.category?.id || null,
-                picture: product.picture || null
+                picture: pictureValue,
+                image: null // Reset image upload when product changes
             });
-            setImageRemoved(false);
+            
+            // Reset new image when product changes
+            if (productIdChanged) {
+                setNewImage(null);
+            }
+            
+            // Only reset imageRemoved if we're loading a different product
+            if (productIdChanged) {
+                setImageRemoved(false);
+            }
         }
-    }, [product]);
+    }, [product?.id]); // Only depend on product ID, not the entire product object
 
     function updateProduct(productId, productData) {
         globalContext.loader(true);
@@ -136,10 +184,53 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
                 globalContext.loader(false);
             })
     }
+    
+    function updateProductWithImage(productId, formData) {
+        globalContext.loader(true);
+        APIBase.put(`api/v1/product/${productId}`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        })
+            .then(payload => {
+                globalContext.message.success("Product updated successfully");
+                // Reset new image state
+                setNewImage(null);
+                setImageRemoved(false);
+                // Reload page to show updated data
+                window.location.reload();
+            })
+            .catch((e) => {
+                const errorMessage = e.response?.data?.message || 
+                                   e.response?.data?.error || 
+                                   e.message ||
+                                   "Error updating product";
+                globalContext.message.error(errorMessage);
+                console.error("Product update error:", e);
+                console.error("Error response:", e.response?.data);
+            })
+            .finally(() => {
+                globalContext.loader(false);
+            })
+    }
 
     function handleRemoveImage() {
         setImageRemoved(true);
+        setNewImage(null); // Clear any new image
         formik.setFieldValue("picture", null);
+        formik.setFieldValue("image", null);
+    }
+    
+    function handleImageChange(info) {
+        const file = info?.fileList?.[0]?.originFileObj;
+        if (file) {
+            setNewImage(file);
+            setImageRemoved(false); // Cancel removal if new image is selected
+            formik.setFieldValue("image", file);
+        } else {
+            setNewImage(null);
+            formik.setFieldValue("image", null);
+        }
     }
 
     // Expose submitForm để có thể trigger từ bên ngoài
@@ -151,27 +242,54 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
         <div>
             <form onSubmit={formik.handleSubmit}>
                 <Row gutter={[18, 32]}>
-                    {/* Image Display (Read-only, can remove) */}
+                    {/* Image Upload/Display */}
                     <Col span={12}>
-                        <Row><label>Current Image</label></Row>
-                        {formik.values.picture && !imageRemoved ? (
+                        <Row><label>Product Image</label></Row>
+                        {newImage ? (
+                            // Show preview of new image
                             <div>
                                 <Image 
-                                    src={getImageUrl(formik.values.picture)} 
-                                    alt="Product"
+                                    src={URL.createObjectURL(newImage)} 
+                                    alt="New product image"
                                     style={{ maxWidth: "200px", marginBottom: "8px" }}
                                 />
                                 <div>
                                     <Button 
                                         type="danger" 
                                         size="small"
+                                        onClick={() => {
+                                            setNewImage(null);
+                                            formik.setFieldValue("image", null);
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                                <small style={{ color: "#52c41a", display: "block", marginTop: "4px" }}>
+                                    New image will be uploaded on save
+                                </small>
+                            </div>
+                        ) : formik.values.picture && !imageRemoved ? (
+                            // Show current image
+                            <div>
+                                <Image 
+                                    src={getImageUrl(formik.values.picture)} 
+                                    alt="Product"
+                                    style={{ maxWidth: "200px", marginBottom: "8px" }}
+                                />
+                                <div style={{ marginBottom: "8px" }}>
+                                    <Button 
+                                        type="danger" 
+                                        size="small"
                                         onClick={handleRemoveImage}
+                                        style={{ marginRight: "8px" }}
                                     >
                                         Remove Image
                                     </Button>
                                 </div>
                             </div>
                         ) : (
+                            // Show placeholder
                             <div>
                                 <img 
                                     src={PlaceHolder} 
@@ -185,9 +303,27 @@ export default function ProductEditForm({ product, submitHandler, trigger }) {
                                 </div>
                             </div>
                         )}
-                        <small style={{ color: "#666", display: "block", marginTop: "8px" }}>
-                            Note: Image upload is not available in edit mode. Use Remove to delete current image.
-                        </small>
+                        <Upload 
+                            action=""
+                            name="image"
+                            listType="picture"
+                            maxCount={1}
+                            beforeUpload={() => false}
+                            fileList={newImage ? [{
+                                uid: '-1',
+                                name: newImage.name || 'image',
+                                status: 'done',
+                                originFileObj: newImage,
+                            }] : []}
+                            onChange={handleImageChange}
+                        >
+                            <Button 
+                                icon={<PrefixIcon><i className="fi fi-rr-inbox-out"></i></PrefixIcon>}
+                                style={{ marginTop: "8px" }}
+                            >
+                                {formik.values.picture && !imageRemoved ? "Change Image" : "Upload Image"}
+                            </Button>
+                        </Upload>
                     </Col>
 
                     {/* Manufacturer */}

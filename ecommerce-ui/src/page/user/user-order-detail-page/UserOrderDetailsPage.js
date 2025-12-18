@@ -1,7 +1,8 @@
 import { useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import APIBase from "../../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../../api/ApiBase";
 import { GlobalContext } from "../../../context";
+import ProductPlaceHolder from "../../../assets/image/product_placeholder.png";
 import { Card, Col, Row, Tag, Divider, Button, Modal, Form, Input, Space, Spin } from "antd";
 import { ReloadOutlined } from '@ant-design/icons';
 import { Description } from "../../../components";
@@ -205,7 +206,7 @@ function UserOrderDetailPage() {
                     <Card>
                         {data && data.orderLines.map((item, index) => (
                             <Row key={index} gutter={[16, 16]}>
-                                <Col span={6}><img style={{ width: "100%", height: "100%", objectFit: "contain" }} src={item.productItem.product.picture} /></Col>
+                                <Col span={6}><img style={{ width: "100%", height: "100%", objectFit: "contain" }} src={getImageUrl(item.productItem.product.picture) || ProductPlaceHolder} alt={item.productItem.product.name} /></Col>
                                 <Col span={18}>
                                     <Row style={{ paddingRight: "16px" }}>{item.productItem.product.name}</Row>
                                     <Tag color="blue">{item.productItem.options.map(item_ => item_.value).join(",")}</Tag>
