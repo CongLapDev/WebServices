@@ -1,0 +1,4 @@
+# Bỏ qua tất cả các file trong thư mục này
+*
+# Trừ chính file .gitignore này để folder không bị trống (giúp giữ folder trên Git)
+!.gitignore
