@@ -1,0 +1,227 @@
+@import '../../global.module.scss';
+
+.footer {
+    background-color: #001529;
+    color: #ffffff;
+    margin-top: 48px;
+    padding: 0;
+}
+
+.footerContainer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 24px 24px;
+
+    @media (max-width: 768px) {
+        padding: 32px 16px 16px 16px;
+    }
+}
+
+.mainContent {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.brandTitle {
+    color: #ffffff !important;
+    margin: 0 0 12px 0 !important;
+    font-weight: 700 !important;
+    font-size: 1.5rem !important;
+}
+
+.tagline {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.contactInfo {
+    margin-top: 8px;
+    width: 100%;
+}
+
+.icon {
+    color: var(--primary-color-400);
+    font-size: 1.1rem;
+}
+
+.contactText {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+}
+
+.sectionTitle {
+    color: #ffffff !important;
+    margin: 0 0 16px 0 !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+}
+
+.linksList {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.footerLink {
+    color: rgba(255, 255, 255, 0.75) !important;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    display: block;
+    
+    &:hover {
+        color: var(--primary-color-400) !important;
+        transform: translateX(4px);
+    }
+}
+
+.newsletterText {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    display: block;
+    margin-bottom: 16px;
+}
+
+.newsletterForm {
+    margin-top: 8px;
+}
+
+.searchInput {
+    width: 100%;
+    
+    :global(.ant-input) {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        &:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-color: var(--primary-color-400);
+        }
+    }
+    
+    :global(.ant-btn-primary) {
+        background-color: var(--primary-color-800);
+        border-color: var(--primary-color-800);
+        
+        &:hover {
+            background-color: var(--primary-color-600);
+            border-color: var(--primary-color-600);
+        }
+    }
+}
+
+.bottomSection {
+    padding-top: 24px;
+    margin-top: 0;
+}
+
+.copyright {
+    text-align: left;
+    
+    @media (max-width: 576px) {
+        text-align: center;
+        margin-bottom: 16px;
+    }
+}
+
+.copyrightText {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.85rem;
+}
+
+.socialSection {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    
+    @media (max-width: 576px) {
+        justify-content: center;
+    }
+}
+
+.socialIcons {
+    display: flex;
+    align-items: center;
+}
+
+.socialLink {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    
+    &:hover {
+        background-color: var(--primary-color-800);
+        transform: translateY(-2px);
+    }
+}
+
+.socialIcon {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+    
+    .socialLink:hover & {
+        color: #ffffff;
+    }
+}
+
+.paymentMethods {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+// Responsive adjustments
+@media (max-width: 992px) {
+    .mainContent {
+        gap: 24px;
+    }
+    
+    .column {
+        margin-bottom: 24px;
+    }
+}
+
+@media (max-width: 576px) {
+    .footerContainer {
+        padding: 24px 16px 16px 16px;
+    }
+    
+    .mainContent {
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+    }
+    
+    .brandTitle {
+        font-size: 1.3rem !important;
+    }
+    
+    .sectionTitle {
+        font-size: 1rem !important;
+    }
+}
+

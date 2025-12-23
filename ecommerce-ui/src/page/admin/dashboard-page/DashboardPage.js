@@ -1,13 +1,14 @@
 import { Row, Col, Card, Avatar, Button, Flex, Statistic, DatePicker, Space } from "antd";
 import style from './style.module.scss';
 import { useEffect, useMemo, useRef, useState } from "react";
-import APIBase from "../../../api/ApiBase";
+import APIBase, { getImageUrl } from "../../../api/ApiBase";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, ArcElement, Title } from "chart.js";
 import { Line, Pie, getElementAtEvent } from "react-chartjs-2";
 import { Link } from "react-router-dom";
 import { Description } from "../../../components";
 import useAuth from "../../../secure/useAuth";
 import AccountStatusTag from "../../../part/account-status-tag/AccountStatusTag";
+import PlaceHolder from "../../../assets/image/product_placeholder.png";
 const { Meta } = Card;
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, ArcElement, Title);
 
@@ -192,7 +193,11 @@ function AdminDashboardPage() {
                         <Col span={24}>
                             {orderStatistics && orderStatistics.length > 0 && orderStatistics[chartIdx].products.map((item_, index) => <Row className={style.product} key={index}>
                                 <Col span={6}>
-                                    <img src={item_.product.picture} />
+                                    <img 
+                                        src={getImageUrl(item_.product.picture) || PlaceHolder} 
+                                        alt={item_.product.name || "Product"}
+                                        style={{ width: "100%", height: "auto", objectFit: "contain" }}
+                                    />
                                 </Col>
                                 <Col span={18}>
                                     <Row><Link to={`/admin/product?id=${item_.product.id}`}>{item_.product.name}</Link></Row>

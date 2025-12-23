@@ -3,6 +3,7 @@ export { default as Card } from './card/Card.js';
 export { default as Currency } from './currency/Currency.js';
 export { default as Description } from './description/Description.js';
 export { default as Error } from './form-component/index.js';
+export { default as Footer } from './footer/Footer.js';
 export { default as InputNumber } from './input-number/InputNumber.js';
 export { default as CheckRadio } from './input-radio/CheckRadio.js';
 export { default as LinkListItem } from './link-list-Item/LinkListItem.js';
