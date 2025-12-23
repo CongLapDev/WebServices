@@ -22,7 +22,7 @@ function Header({ searchTrigger }) {
             <Col order={1} className={clsx(style.item, style.logo, style.left, style.logo)}>
                 <Link className={style.box} to="/">
                     <img src={Logo} />
-                    <h2 >GadgetHub</h2>
+                    <h2 >LLM Shop</h2>
                 </Link>
             </Col>
             <Col order={2} className={clsx(style.item, style.left, style.search)} tabIndex={-1}>

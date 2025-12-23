@@ -3,11 +3,9 @@ import globalStyle from '../../../assets/style/base.module.scss';
 import style from './style.module.scss';
 import clsx from "clsx";
 import { Link } from "react-router-dom";
-import { Fragment, useState, useEffect } from "react";
-import styled from "styled-components";
+import { useState, useEffect } from "react";
 import APIBase from "../../../api/ApiBase";
-
-const Div = styled.div``;
+import useDevice from "../../../hooks/useDevice";
 
 // Icon mapping for common category names
 const getCategoryIcon = (categoryName) => {
@@ -67,6 +65,10 @@ const transformCategory = (category) => {
 function CategoryBar({ className }) {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const device = useDevice();
+    
+    // Use click trigger on mobile/tablet, hover on desktop
+    const dropdownTrigger = device === "MOBILE" || device === "TABLET" ? ['click'] : ['hover'];
 
     useEffect(() => {
         // Fetch categories from API
@@ -110,20 +112,35 @@ function CategoryBar({ className }) {
                 {
                     categories.length > 0 ? categories.map((category_, key) => {
                         const hasChildren = category_.children && category_.children.length > 0;
-                        const Wrap = hasChildren ? Dropdown : Fragment;
-                        const Item = category_.href ? Link : Div;
                         
                         return (
                             <Col key={category_.id || key} span={8} md={{ span: 6 }} lg={{ span: 4 }} className={style.category}>
-                                <Wrap {...(hasChildren ? { menu: { items: category_.children } } : {})}>
-                                    <Item 
+                                {hasChildren ? (
+                                    <Dropdown 
+                                        menu={{ items: category_.children }}
+                                        trigger={dropdownTrigger}
+                                        placement="bottomLeft"
+                                    >
+                                        <Link 
+                                            to={category_.href} 
+                                            className={clsx(globalStyle.listItem, style.categoryItem)}
+                                        >
+                                            <span className={globalStyle.icon}>{category_.icon}</span>
+                                            <span>{category_.label}</span>
+                                            <span className={style.dropdownIndicator}>
+                                                <i className="fi fi-rr-angle-small-down"></i>
+                                            </span>
+                                        </Link>
+                                    </Dropdown>
+                                ) : (
+                                    <Link 
                                         to={category_.href} 
                                         className={clsx(globalStyle.listItem, style.categoryItem)}
                                     >
                                         <span className={globalStyle.icon}>{category_.icon}</span>
                                         <span>{category_.label}</span>
-                                    </Item>
-                                </Wrap>
+                                    </Link>
+                                )}
                             </Col>
                         );
                     }) : (
