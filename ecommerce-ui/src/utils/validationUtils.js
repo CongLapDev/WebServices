@@ -10,7 +10,7 @@ export const validateTrackingNumber = (trackingNumber) => {
     if (!trackingNumber || trackingNumber.trim() === '') {
         return {
             valid: false,
-            message: 'Mã vận đơn không được để trống'
+            message: 'Tracking number cannot be empty'
         };
     }
 
@@ -41,13 +41,13 @@ export const validateTrackingNumber = (trackingNumber) => {
         return { 
             valid: true, 
             carrier: 'Other',
-            warning: 'Định dạng không chuẩn, vui lòng kiểm tra lại'
+            warning: 'Format may not be standard, please verify'
         };
     }
 
     return {
         valid: false,
-        message: 'Mã vận đơn không hợp lệ. Phải có ít nhất 6 ký tự.'
+        message: 'Invalid tracking number. Must be at least 6 characters.'
     };
 };
 
@@ -76,7 +76,7 @@ export const getTrackingUrl = (trackingNumber, carrier) => {
  */
 export const getTrackingFormatHint = () => {
     return `
-Định dạng phổ biến:
+Common formats:
 • GHN: GHN123456789
 • GHTK: S12345678
 • Viettel Post: AA123456789VN

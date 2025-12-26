@@ -49,7 +49,7 @@ function AdminOrderDetailPage() {
                 console.log('Order date raw:', data.orderDate, 'Type:', typeof data.orderDate);
             })
             .catch(() => {
-                globalContext.message.error("Không thể tải thông tin đơn hàng");
+                globalContext.message.error("Unable to load order information");
             });
     };
 
@@ -57,22 +57,22 @@ function AdminOrderDetailPage() {
 
     const handleConfirmOrder = () => {
         confirm({
-            title: 'Xác nhận đơn hàng',
+            title: 'Confirm Order',
             icon: <CheckCircleOutlined />,
-            content: 'Bạn có chắc chắn muốn xác nhận đơn hàng này?',
-            okText: 'Xác nhận',
-            cancelText: 'Hủy',
+            content: 'Are you sure you want to confirm this order?',
+            okText: 'Confirm',
+            cancelText: 'Cancel',
             onOk: async () => {
                 setActionLoading(true);
                 try {
                     const response = await APIBase.post(
                         `/api/v1/order/${params.get("id")}/status/confirm`,
-                        { note: 'Đơn hàng đã được xác nhận bởi admin' }
+                        { note: 'Order confirmed by admin' }
                     );
-                    globalContext.message.success('✅ Đã xác nhận đơn hàng!');
+                    globalContext.message.success('✅ Order confirmed!');
                     loadOrder(); // Reload order
                 } catch (error) {
-                    globalContext.message.error('Lỗi xác nhận: ' + error.message);
+                    globalContext.message.error('Confirmation error: ' + error.message);
                 } finally {
                     setActionLoading(false);
                 }
@@ -83,31 +83,31 @@ function AdminOrderDetailPage() {
     const handlePrepareOrder = () => {
         let note = '';
         confirm({
-            title: 'Bắt đầu chuẩn bị hàng',
+            title: 'Start Preparing Order',
             icon: <ExclamationCircleOutlined />,
             content: (
                 <div>
-                    <p>Thông báo kho bắt đầu chuẩn bị sản phẩm.</p>
+                    <p>Notify warehouse to start preparing products.</p>
                     <TextArea
-                        placeholder="Ghi chú (optional)"
+                        placeholder="Note (optional)"
                         rows={3}
                         onChange={(e) => note = e.target.value}
                     />
                 </div>
             ),
-            okText: 'Bắt đầu chuẩn bị',
-            cancelText: 'Hủy',
+            okText: 'Start Preparing',
+            cancelText: 'Cancel',
             onOk: async () => {
                 setActionLoading(true);
                 try {
                     await APIBase.post(
                         `/api/v1/order/${params.get("id")}/status/prepare`,
-                        { note: note || 'Kho đang chuẩn bị hàng' }
+                        { note: note || 'Warehouse is preparing order' }
                     );
-                    globalContext.message.success('📦 Đã chuyển sang chuẩn bị hàng!');
+                    globalContext.message.success('📦 Order moved to preparing!');
                     loadOrder();
                 } catch (error) {
-                    globalContext.message.error('Lỗi: ' + error.message);
+                    globalContext.message.error('Error: ' + error.message);
                 } finally {
                     setActionLoading(false);
                 }
@@ -121,13 +121,13 @@ function AdminOrderDetailPage() {
         let validationResult = null;
         
         confirm({
-            title: 'Giao hàng cho shipper',
+            title: 'Ship Order',
             icon: <ExclamationCircleOutlined />,
             content: (
                 <div>
-                    <p>Nhập mã vận đơn:</p>
+                    <p>Enter tracking number:</p>
                     <Input
-                        placeholder="Mã vận đơn (tracking number)"
+                        placeholder="Tracking number"
                         style={{ marginBottom: 10 }}
                         onChange={(e) => {
                             trackingNumber = e.target.value;
@@ -135,21 +135,21 @@ function AdminOrderDetailPage() {
                         }}
                     />
                     <Alert
-                        message="Định dạng mã vận đơn"
+                        message="Tracking Number Format"
                         description={getTrackingFormatHint()}
                         type="info"
                         showIcon
                         style={{ marginBottom: 10, fontSize: 12 }}
                     />
                     <TextArea
-                        placeholder="Ghi chú (optional)"
+                        placeholder="Note (optional)"
                         rows={2}
                         onChange={(e) => note = e.target.value}
                     />
                 </div>
             ),
-            okText: 'Giao cho shipper',
-            cancelText: 'Hủy',
+            okText: 'Ship Order',
+            cancelText: 'Cancel',
             onOk: async () => {
                 // Validate tracking number
                 const validation = validateTrackingNumber(trackingNumber);
@@ -168,14 +168,14 @@ function AdminOrderDetailPage() {
                     await APIBase.post(
                         `/api/v1/order/${params.get("id")}/status/ship`,
                         {
-                            note: note || `Đơn hàng đã giao cho shipper ${validation.carrier || ''}`,
+                            note: note || `Order shipped via ${validation.carrier || 'carrier'}`,
                             trackingNumber: trackingNumber
                         }
                     );
-                    globalContext.message.success(`🚚 Đã giao cho ${validation.carrier || 'shipper'}!`);
+                    globalContext.message.success(`🚚 Shipped via ${validation.carrier || 'carrier'}!`);
                     loadOrder();
                 } catch (error) {
-                    globalContext.message.error('Lỗi: ' + error.message);
+                    globalContext.message.error('Error: ' + error.message);
                 } finally {
                     setActionLoading(false);
                 }
@@ -185,29 +185,29 @@ function AdminOrderDetailPage() {
 
     const handleDeliverOrder = () => {
         confirm({
-            title: 'Xác nhận đã giao hàng',
+            title: 'Confirm Delivery',
             icon: <CheckCircleOutlined />,
             content: (
                 <div>
-                    <p>Xác nhận shipper đã giao hàng thành công và thu tiền COD?</p>
+                    <p>Confirm that the order has been delivered successfully and COD payment collected?</p>
                     <p style={{ color: '#52c41a', fontWeight: 'bold' }}>
-                        Số tiền COD: {data?.total?.toLocaleString()}₫
+                        COD Amount: {data?.total?.toLocaleString()}₫
                     </p>
                 </div>
             ),
-            okText: 'Đã giao hàng',
-            cancelText: 'Chưa',
+            okText: 'Delivered',
+            cancelText: 'Not Yet',
             onOk: async () => {
                 setActionLoading(true);
                 try {
                     await APIBase.post(
                         `/api/v1/order/${params.get("id")}/status/deliver`,
-                        { note: `Giao hàng thành công. Đã thu ${data.total.toLocaleString()}₫` }
+                        { note: `Delivery successful. COD payment of ${data.total.toLocaleString()}₫ collected` }
                     );
-                    globalContext.message.success('✅ Đã giao hàng thành công!');
+                    globalContext.message.success('✅ Order delivered successfully!');
                     loadOrder();
                 } catch (error) {
-                    globalContext.message.error('Lỗi: ' + error.message);
+                    globalContext.message.error('Error: ' + error.message);
                 } finally {
                     setActionLoading(false);
                 }
@@ -217,23 +217,23 @@ function AdminOrderDetailPage() {
 
     const handleCompleteOrder = () => {
         confirm({
-            title: 'Hoàn tất đơn hàng',
+            title: 'Complete Order',
             icon: <CheckCircleOutlined />,
-            content: 'Xác nhận hoàn tất đơn hàng này? Sau khi hoàn tất không thể thay đổi.',
-            okText: 'Hoàn tất',
+            content: 'Confirm to complete this order? This action cannot be undone.',
+            okText: 'Complete',
             okType: 'primary',
-            cancelText: 'Hủy',
+            cancelText: 'Cancel',
             onOk: async () => {
                 setActionLoading(true);
                 try {
                     await APIBase.post(
                         `/api/v1/order/${params.get("id")}/status/complete`,
-                        { note: 'Đơn hàng hoàn tất' }
+                        { note: 'Order completed' }
                     );
-                    globalContext.message.success('🎉 Đơn hàng đã hoàn tất!');
+                    globalContext.message.success('🎉 Order completed!');
                     loadOrder();
                 } catch (error) {
-                    globalContext.message.error('Lỗi: ' + error.message);
+                    globalContext.message.error('Error: ' + error.message);
                 } finally {
                     setActionLoading(false);
                 }
@@ -245,12 +245,12 @@ function AdminOrderDetailPage() {
         setActionLoading(true);
         APIBase.post(`/api/v1/order/${params.get("id")}/cancel`, formData)
             .then(() => {
-                globalContext.message.success('Đã hủy đơn hàng');
+                globalContext.message.success('Order cancelled');
                 setCancelModal(false);
                 loadOrder();
             })
             .catch(() => {
-                globalContext.message.error('Lỗi khi hủy đơn');
+                globalContext.message.error('Error cancelling order');
             })
             .finally(() => {
                 setActionLoading(false);
@@ -271,11 +271,11 @@ function AdminOrderDetailPage() {
         if (isFinalStatus(statusId)) {
             return (
                 <Alert
-                    message={statusId === 7 ? '🎉 Đơn hàng đã hoàn tất' : '❌ Đơn hàng đã bị hủy'}
+                    message={statusId === 7 ? '🎉 Order Completed' : '❌ Order Cancelled'}
                     description={
                         statusId === 7
-                            ? 'Không cần thao tác thêm. Đơn hàng đã được xử lý thành công.'
-                            : `Lý do: ${currentStatus.note}`
+                            ? 'No further action needed. Order has been processed successfully.'
+                            : `Reason: ${currentStatus.note}`
                     }
                     type={statusId === 7 ? 'success' : 'error'}
                     showIcon
@@ -288,7 +288,7 @@ function AdminOrderDetailPage() {
         return (
             <div style={{ marginTop: 16 }}>
                 <Alert
-                    message="💡 Bước tiếp theo"
+                    message="💡 Next Step"
                     description={getNextStepHint(statusId)}
                     type="info"
                     showIcon
@@ -306,7 +306,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            ✅ Xác nhận đơn hàng
+                            ✅ Confirm Order
                         </Button>
                     )}
 
@@ -319,7 +319,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            📦 Bắt đầu chuẩn bị hàng
+                            📦 Start Preparing
                         </Button>
                     )}
 
@@ -332,7 +332,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            🚚 Giao cho shipper
+                            🚚 Ship Order
                         </Button>
                     )}
 
@@ -345,7 +345,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            ✅ Đã giao hàng thành công
+                            ✅ Confirm Delivery
                         </Button>
                     )}
 
@@ -358,7 +358,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            🎉 Hoàn tất đơn hàng
+                            🎉 Complete Order
                         </Button>
                     )}
 
@@ -372,7 +372,7 @@ function AdminOrderDetailPage() {
                             loading={actionLoading}
                             block
                         >
-                            ❌ Hủy đơn hàng
+                            ❌ Cancel Order
                         </Button>
                     )}
                 </Space>
@@ -382,13 +382,13 @@ function AdminOrderDetailPage() {
 
     const getNextStepHint = (statusId) => {
         const hints = {
-            1: 'Kiểm tra thông tin đơn hàng và xác nhận',
-            3: 'Thông báo kho bắt đầu chuẩn bị sản phẩm',
-            4: 'Đóng gói xong, giao cho shipper và nhập mã vận đơn',
-            5: 'Chờ shipper giao hàng và thu tiền COD',
-            6: 'Xác nhận đơn hàng hoàn tất (hoặc tự động sau 3 ngày)'
+            1: 'Review order information and confirm',
+            3: 'Notify warehouse to start preparing products',
+            4: 'After packaging, ship order and enter tracking number',
+            5: 'Wait for carrier to deliver and collect COD payment',
+            6: 'Confirm order completion (or auto-complete after 3 days)'
         };
-        return hints[statusId] || 'Xử lý đơn hàng';
+        return hints[statusId] || 'Process order';
     };
 
     // ========== RENDER ORDER TIMELINE ==========
@@ -410,7 +410,7 @@ function AdminOrderDetailPage() {
                         status="error"
                         items={[
                             {
-                                title: 'Đơn hàng đã bị hủy',
+                                title: 'Order Cancelled',
                                 icon: <CloseCircleOutlined />,
                                 description: currentStatus.note
                             }
@@ -422,12 +422,12 @@ function AdminOrderDetailPage() {
 
         // Normal workflow steps
         const workflowSteps = [
-            { id: 1, title: 'Chờ xác nhận' },
-            { id: 3, title: 'Đã xác nhận' },
-            { id: 4, title: 'Chuẩn bị hàng' },
-            { id: 5, title: 'Đang giao' },
-            { id: 6, title: 'Đã giao' },
-            { id: 7, title: 'Hoàn tất' }
+            { id: 1, title: 'To Pay' },
+            { id: 3, title: 'Confirmed' },
+            { id: 4, title: 'Preparing' },
+            { id: 5, title: 'Shipping' },
+            { id: 6, title: 'Delivered' },
+            { id: 7, title: 'Completed' }
         ];
 
         let currentStep = 0;
@@ -444,7 +444,7 @@ function AdminOrderDetailPage() {
                     status={currentStatusId === 7 ? 'finish' : 'process'}
                     items={workflowSteps.map((step, index) => ({
                         title: step.title,
-                        description: index === currentStep ? '← Bạn đang ở đây' : null
+                        description: index === currentStep ? '← Current step' : null
                     }))}
                 />
             </Card>
@@ -454,7 +454,7 @@ function AdminOrderDetailPage() {
     // ========== RENDER ==========
 
     if (!data) {
-        return <div style={{ padding: 24, textAlign: 'center' }}>Đang tải...</div>;
+        return <div style={{ padding: 24, textAlign: 'center' }}>Loading...</div>;
     }
 
     const currentStatus = getCurrentStatus(data);
@@ -463,14 +463,14 @@ function AdminOrderDetailPage() {
         <>
             {/* Cancel Order Modal */}
             <Modal
-                title="Hủy đơn hàng"
+                title="Cancel Order"
                 open={cancelModal}
                 onCancel={() => setCancelModal(false)}
                 footer={null}
             >
                 <Alert
-                    message="Cảnh báo"
-                    description="Hành động này không thể hoàn tác!"
+                    message="Warning"
+                    description="This action cannot be undone!"
                     type="warning"
                     showIcon
                     style={{ marginBottom: 16 }}
@@ -478,18 +478,18 @@ function AdminOrderDetailPage() {
                 <Form onFinish={handleCancelOrder}>
                     <Form.Item
                         name="note"
-                        rules={[{ required: true, message: 'Vui lòng nhập lý do hủy đơn' }]}
+                        rules={[{ required: true, message: 'Please enter cancellation reason' }]}
                     >
-                        <TextArea placeholder="Lý do hủy đơn (bắt buộc)" rows={3} />
+                        <TextArea placeholder="Cancellation reason (required)" rows={3} />
                     </Form.Item>
                     <Form.Item name="detail">
-                        <TextArea placeholder="Chi tiết (optional)" rows={2} />
+                        <TextArea placeholder="Details (optional)" rows={2} />
                     </Form.Item>
                     <Row justify="end">
                         <Space>
-                            <Button onClick={() => setCancelModal(false)}>Hủy</Button>
+                            <Button onClick={() => setCancelModal(false)}>Cancel</Button>
                             <Button type="primary" danger htmlType="submit" loading={actionLoading}>
-                                Xác nhận hủy đơn
+                                Confirm Cancellation
                             </Button>
                         </Space>
                     </Row>
@@ -502,7 +502,7 @@ function AdminOrderDetailPage() {
                     <Card>
                         <Row justify="space-between" align="middle">
                             <Col>
-                                <h2 style={{ margin: 0 }}>Đơn hàng #{data.id}</h2>
+                                <h2 style={{ margin: 0 }}>Order #{data.id}</h2>
                             </Col>
                             <Col>
                                 <OrderStatusTag status={currentStatus?.status} />
@@ -520,7 +520,7 @@ function AdminOrderDetailPage() {
                 <Col xs={24} lg={6}>
                     <Row gutter={[16, 16]}>
                         <Col span={24}>
-                            <Card title="👤 Khách hàng">
+                            <Card title="👤 Customer">
                                 <Card.Meta
                                     avatar={<Avatar src={data.user.picture} />}
                                     title={`${data.user.firstname} ${data.user.lastname}`}
@@ -528,13 +528,13 @@ function AdminOrderDetailPage() {
                                 />
                                 {data.user.phoneNumber && (
                                     <p style={{ marginTop: 12 }}>
-                                        <strong>SĐT:</strong> {data.user.phoneNumber}
+                                        <strong>Phone:</strong> {data.user.phoneNumber}
                                     </p>
                                 )}
                             </Card>
                         </Col>
                         <Col span={24}>
-                            <Card title="📍 Địa chỉ giao hàng">
+                            <Card title="📍 Delivery Address">
                                     <p>{data.address.city}</p>
                                     <Description>{data.address.region}</Description>
                                     <Description>{data.address.addressLine1}</Description>
@@ -551,18 +551,18 @@ function AdminOrderDetailPage() {
                             <Row gutter={[16, 16]}>
                                 <Col xs={24} md={12}>
                                     <Card>
-                                        <Statistic title="📅 Ngày đặt" value={formatDateTime(data.orderDate)} />
+                                        <Statistic title="📅 Order Date" value={formatDateTime(data.orderDate)} />
                                     </Card>
                                 </Col>
                                 <Col xs={24} md={6}>
                                     <Card>
-                                        <Statistic title="💰 Tổng tiền" value={data.total} suffix="₫" />
+                                        <Statistic title="💰 Total" value={data.total} suffix="₫" />
                                     </Card>
                                 </Col>
                                 <Col xs={24} md={6}>
                                     <Card>
                                         <Statistic
-                                            title="🚚 Vận chuyển"
+                                            title="🚚 Shipping"
                                             value={data.shippingMethod?.price || 0}
                                             suffix="₫"
                                         />
@@ -573,7 +573,7 @@ function AdminOrderDetailPage() {
 
                         {/* Products & Actions */}
                         <Col xs={24} lg={18}>
-                            <Card title="📦 Sản phẩm">
+                            <Card title="📦 Products">
                                         {data.orderLines.map((item, index) => (
                                     <div key={index}>
                                         <Row gutter={[16, 16]} align="middle">
@@ -590,7 +590,7 @@ function AdminOrderDetailPage() {
                                                     {item.productItem.options.map(opt => opt.value).join(", ")}
                                                 </Tag>
                                                 <Row justify="space-between" style={{ marginTop: 8 }}>
-                                                    <Col>Số lượng: {item.qty}</Col>
+                                                    <Col>Quantity: {item.qty}</Col>
                                                     <Col>
                                                         <strong><Currency value={item.total} /></strong>
                                                 </Col>
@@ -602,7 +602,7 @@ function AdminOrderDetailPage() {
                                 ))}
                                         <Divider />
                                 <Row justify="end">
-                                    <h3>Tổng cộng: <span style={{ color: '#52c41a' }}>
+                                    <h3>Total: <span style={{ color: '#52c41a' }}>
                                         <Currency value={data.total} />
                                     </span></h3>
                                 </Row>
@@ -614,8 +614,8 @@ function AdminOrderDetailPage() {
                             <Row gutter={[16, 16]}>
                                 {/* Payment Method */}
                                 <Col span={24}>
-                                    <Card title="💳 Thanh toán">
-                                        <p><strong>Phương thức:</strong></p>
+                                    <Card title="💳 Payment">
+                                        <p><strong>Method:</strong></p>
                                         <Tag color="gold">{data.payment?.type.name}</Tag>
                                     </Card>
                                 </Col>
@@ -629,8 +629,8 @@ function AdminOrderDetailPage() {
                                         
                                         return (
                                             <Col span={24}>
-                                                <Card title="🚚 Vận chuyển">
-                                                    <p><strong>Mã vận đơn:</strong></p>
+                                                <Card title="🚚 Shipping">
+                                                    <p><strong>Tracking Number:</strong></p>
                                                     <Tag color="purple">{shippingStatus.detail}</Tag>
                                                     {validation.carrier && (
                                                         <p style={{ marginTop: 8 }}>
@@ -644,7 +644,7 @@ function AdminOrderDetailPage() {
                                                             target="_blank"
                                                             style={{ paddingLeft: 0 }}
                                                         >
-                                                            🔍 Tra cứu vận đơn
+                                                            🔍 Track Package
                                                         </Button>
                                                     )}
                                                 </Card>
@@ -656,14 +656,14 @@ function AdminOrderDetailPage() {
 
                                 {/* Action Buttons */}
                                         <Col span={24}>
-                                    <Card title="⚡ Thao tác">
+                                    <Card title="⚡ Actions">
                                         {getActionButtons()}
                                             </Card>
                                         </Col>
 
                                 {/* Status History */}
                                         <Col span={24}>
-                                    <Card title="📜 Lịch sử">
+                                    <Card title="📜 History">
                                         <Timeline
                                             items={data.status.map(item => ({
                                                 children: (

@@ -14,7 +14,7 @@ function OrderList({ state, user }) {
         const scrollTop = window.scrollY || document.documentElement.scrollTop;
         const windowHeight = window.innerHeight;
         const docHeight = document.documentElement.scrollHeight;
-        // Kiểm tra nếu người dùng đã cuộn tới cuối trang
+        // Check if user has scrolled to the bottom of the page
         if (scrollTop + windowHeight >= docHeight) {
             setLoad(true);
             fetchOrder(page);

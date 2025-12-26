@@ -4,15 +4,15 @@
  */
 
 export const ORDER_STATUS = {
-  PENDING_PAYMENT: { id: 1, label: 'Chờ xác nhận', color: 'orange', icon: '⏳' },
-  PAID: { id: 2, label: 'Đã thanh toán', color: 'lime', icon: '💰' },
-  CONFIRMED: { id: 3, label: 'Đã xác nhận', color: 'blue', icon: '✅' },
-  PREPARING: { id: 4, label: 'Đang chuẩn bị', color: 'yellow', icon: '📦' },
-  SHIPPING: { id: 5, label: 'Đang giao hàng', color: 'purple', icon: '🚚' },
-  DELIVERED: { id: 6, label: 'Đã giao hàng', color: 'cyan', icon: '✅' },
-  COMPLETED: { id: 7, label: 'Hoàn tất', color: 'green', icon: '🎉' },
-  CANCELLED: { id: 8, label: 'Đã hủy', color: 'red', icon: '❌' },
-  RETURNED: { id: 9, label: 'Đã trả hàng', color: 'pink', icon: '↩️' }
+  PENDING_PAYMENT: { id: 1, label: 'To Pay', color: 'orange', icon: '⏳' },
+  PAID: { id: 2, label: 'Paid', color: 'lime', icon: '💰' },
+  CONFIRMED: { id: 3, label: 'Confirmed', color: 'blue', icon: '✅' },
+  PREPARING: { id: 4, label: 'Preparing', color: 'yellow', icon: '📦' },
+  SHIPPING: { id: 5, label: 'Shipping', color: 'purple', icon: '🚚' },
+  DELIVERED: { id: 6, label: 'Delivered', color: 'cyan', icon: '✅' },
+  COMPLETED: { id: 7, label: 'Completed', color: 'green', icon: '🎉' },
+  CANCELLED: { id: 8, label: 'Cancelled', color: 'red', icon: '❌' },
+  RETURNED: { id: 9, label: 'Returned', color: 'pink', icon: '↩️' }
 };
 
 /**
